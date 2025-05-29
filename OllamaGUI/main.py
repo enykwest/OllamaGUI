@@ -88,26 +88,26 @@ class OllamaGui(baseGUI):
         
         # send prompt and capture response
         response = subprocess.run(command, capture_output=True)
-        
-        if formatResponse:
-            # Handle errors and return answer
-            if response.returncode != 0:
-                errorMessage = '\nOops! Something went wrong! Error Code: {}\n\n'.format(response.returncode)
-                print(errorMessage) # test_LLM_connection() should print additional info
-                # see if LLM service is running and fix it if possible
-                errorMessage += self.test_LLM_connection()                
-                response = errorMessage
-            elif formatResponse:        
-                # decode byte response
-                response = str(response.stdout.decode()) # str is probably overkill, but I suspect safer 
-                response = "\nOllama:\n" + response +"\n"
-                print(response) #debug
+
+        # Handle errors and return answer
+        if response.returncode != 0:
+            errorMessage = '\nOops! Something went wrong! Error Code: {}\n\n'.format(response.returncode)
+            print(errorMessage) # test_LLM_connection() should print additional info
+            # see if LLM service is running and fix it if possible
+            #errorMessage += self.test_LLM_connection()  # RECURSION BUG!               
+            response = errorMessage
+        elif formatResponse:        
+            # decode byte response
+            response = str(response.stdout.decode()) # str is probably overkill, but I suspect safer 
+            response = "\nOllama:\n" + response +"\n"
+            print(response) #debug
         else:
             pass
-            
+ 
         return response
 
 
+    # old version 1, bad form, recursion issues
     def test_LLM_connection(self, response=None, fix=True):
         '''
         Test connection to LLM and attempt to fix it.
@@ -132,35 +132,102 @@ class OllamaGui(baseGUI):
                 print(errorMsg)
             return errorMsg
         
+        try:
         
-        if response is None:
-            response = self._send_command(r"hello", formatResponse=False)
-            errorMsg += cumError(response, preMsg='Testing Connection...\n\n')
-        else:
-            errorMsg += cumError(response)
-            
-            
-        #TODO Errors are only for podman currently
-        if response.returncode == 0: # no error, all good
-            pass
-        elif fix: # if there is an error, try to debug
-            stderr = response.stderr.decode()
-            #errorMsg += stderr # already done above with cumError
-            if r"container state improper" in stderr:
-                response = self.start_ollama_container()
-                errorMsg += cumError(response, preMsg='Trying to start Ollama container...\n\n')
+            if response is None:
+                response = self._send_command(r"hello", formatResponse=False)
+                errorMsg += cumError(response, preMsg='Testing Connection...\n\n')
+            else:
+                errorMsg += cumError(response)
                 
-            elif r"unable to connect to Podman socket" in stderr:
-                response = self.start_server()
-                errorMsg += cumError(response, preMsg='Trying to start container service...\n\n')
-                response = self.start_ollama_container()
-                errorMsg += cumError(response, preMsg='Trying to start Ollama container...\n\n')
-         
-            # Trying again
-            response = self._send_command(r"hello", formatResponse=False)
-            errorMsg += cumError(response, preMsg='Testing LLM again...\n\n')
+                
+            #TODO Errors are only for podman currently
+            if response.returncode == 0: # no error, all good
+                pass
+            elif fix: # if there is an error, try to debug
+                stderr = response.stderr.decode()
+                #errorMsg += stderr # already done above with cumError
+                if r"container state improper" in stderr:
+                    response = self.start_ollama_container()
+                    errorMsg += cumError(response, preMsg='Trying to start Ollama container...\n\n')
+                    
+                elif r"unable to connect to Podman socket" in stderr:
+                    response = self.start_server()
+                    errorMsg += cumError(response, preMsg='Trying to start container service...\n\n')
+                    response = self.start_ollama_container()
+                    errorMsg += cumError(response, preMsg='Trying to start Ollama container...\n\n')
+             
+                # Trying again
+                response = self._send_command(r"hello", formatResponse=False)
+                errorMsg += cumError(response, preMsg='Testing LLM again...\n\n')
+        
+        except FileNotFoundError:
+            # One way to generate this error is to try and run the script
+            # on a computer that doesn't have ollama/docker/podman
+            # ...ask me how I know...
+            errorMsg = "FileNotFoundError . Are you sure your prefix is set correctly? Is Ollama installed?"
+
         
         return errorMsg
+    
+    
+    
+    def test_LLM_connection(self, fix=True):
+        '''
+        Test connection to LLM and attempt to fix it.
+        
+        errorCode = 0 # success
+        errorCode = -1 # failure, default return
+        
+        '''
+        errorCode = -1 # default return, failed connection
+        
+        try:
+            response = self._send_command(r"hello", formatResponse=False)
+                
+            #TODO Errors are only for podman currently
+            if response.returncode == 0: # no error, all good
+                errorCode = 0 # success
+                
+            elif fix: # if there is an error, try to debug
+                stderr = response.stderr.decode()
+                print(stderr)
+                if r"container state improper" in stderr:
+                    print('Trying to start Ollama container...\n\n')
+                    response = self.start_ollama_container()
+                    stderr = response.stderr.decode()
+                    print(stderr)
+                
+                if r"unable to connect to Podman socket" in stderr:
+                    print('Trying to start container service...\n\n')
+                    response = self.start_server()
+                    stderr = response.stderr.decode()
+                    print(stderr)
+                    
+                    print('Trying to start Ollama container...\n\n')
+                    response = self.start_ollama_container()
+                    stderr = response.stderr.decode()
+                    print(stderr)
+             
+                # Trying again
+                print('Testing LLM again...\n\n')
+                response = self._send_command(r"hello", formatResponse=False)
+                stderr = response.stderr.decode()
+                print(stderr)
+                
+                if response.returncode == 0: # no error, all good
+                    errorCode = 0 # success
+        
+        except FileNotFoundError:
+            # One way to generate this error is to try and run the script
+            # on a computer that doesn't have ollama/docker/podman
+            # ...ask me how I know...
+            print("FileNotFoundError . Are you sure your prefix is set correctly? Is Ollama installed?")
+
+        
+        return errorCode
+    
+    
 
 
     def start_server(self):
