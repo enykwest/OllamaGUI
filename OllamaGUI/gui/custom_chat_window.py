@@ -1,13 +1,13 @@
-# the "." is require if used as a module but breaks thing if tested alone.
 import tkinter as tk
 from tkinter import scrolledtext, filedialog, messagebox
 import datetime
 import os
-
+# the "." is require if used as a module but breaks thing if tested alone.
 if __name__ == "__main__":
     from base_window import BaseWindow
 else:
     from .base_window import BaseWindow
+    
 class ExampleChatWindow(BaseWindow):
     """
     An example window for chat applications demonstrating that class inheritance

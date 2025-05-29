@@ -1,3 +1,5 @@
+# THIS IS WRONG AND NEEDS UPDATING!
+
 # Using the ChatWindow as a Template for Python Applications
 
 This guide explains how to use the TKinter ChatWindow class as a template for other Python GUI applications, covering file structure, importing, and extending the base functionality.
