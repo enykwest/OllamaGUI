@@ -23,7 +23,11 @@ class OllamaGui(baseGUI):
         #self.protocol("WM_DELETE_WINDOW", self.exit)
 
         # Check if LLM service is running and start/fix it if possible
-        self.test_LLM_connection()
+        connectionStatus , errorMsg = self.test_LLM_connection(fix=True)
+        if connectionStatus:
+            self.push_to_chat_window(r'Hello World!')
+        else:
+            self.push_to_chat_window(f'{errorMsg}')
 
 
     #%% Ollama Related methods/properties
@@ -42,6 +46,12 @@ class OllamaGui(baseGUI):
         self.stop_server()
         self.destroy()
 
+    def push_to_chat_window(self, text):
+        # Send the text to the chat window
+        self.chat_history.config(state=tk.NORMAL) # enable changing text
+        self.chat_history.insert(tk.INSERT, "\nANNOUNCMENT:\n" + text + '\n') # insert text
+        self.chat_history.yview(tk.END) # scroll to bottom
+        self.chat_history.config(state=tk.DISABLED) # disable changing text
 
     # I feel like this should be folded into the baseGUI somehow
     def send_prompt(self):
@@ -58,7 +68,7 @@ class OllamaGui(baseGUI):
         
         # Send the prompt to the chat window
         self.chat_history.config(state=tk.NORMAL) # enable changing text
-        self.chat_history.insert(tk.INSERT, "User:\n" + prompt + '\n') # insert prompt
+        self.chat_history.insert(tk.INSERT, "\nUser:\n" + prompt + '\n') # insert prompt
         self.chat_history.yview(tk.END) # scroll to bottom
         self.chat_history.config(state=tk.DISABLED) # disable changing text
         
@@ -77,6 +87,7 @@ class OllamaGui(baseGUI):
         self.chat_history.config(state=tk.DISABLED) # disable changing text
         
         return 0
+
 
     #%% Define backed / interface / debug functions
     #TODO move these to a seperate backend script
@@ -172,22 +183,23 @@ class OllamaGui(baseGUI):
     
     
     
-    def test_LLM_connection(self, fix=True):
+    def test_LLM_connection(self, fix):
         '''
         Test connection to LLM and attempt to fix it.
         
-        errorCode = 0 # success
-        errorCode = -1 # failure, default return
+        connectionStatus = True # success , connected to LLM
+        connectionStatus = False # failure, NOT connected to LLM, default return
         
         '''
-        errorCode = -1 # default return, failed connection
+        connectionStatus = False # default return, failed connection
+        errorMsg = ""
         
         try:
             response = self._send_command(r"hello", formatResponse=False)
                 
             #TODO Errors are only for podman currently
             if response.returncode == 0: # no error, all good
-                errorCode = 0 # success
+                connectionStatus = True # success
                 
             elif fix: # if there is an error, try to debug
                 stderr = response.stderr.decode()
@@ -216,16 +228,17 @@ class OllamaGui(baseGUI):
                 print(stderr)
                 
                 if response.returncode == 0: # no error, all good
-                    errorCode = 0 # success
+                    connectionStatus = True # success
         
         except FileNotFoundError:
             # One way to generate this error is to try and run the script
             # on a computer that doesn't have ollama/docker/podman
             # ...ask me how I know...
-            print("FileNotFoundError . Are you sure your prefix is set correctly? Is Ollama installed?")
-
+            errorMsg = "FileNotFoundError . Are you sure your prefix is set correctly? Is Ollama installed?"
+            print(errorMsg)
+            #connectionStatus = False # default connectionStatus is False
         
-        return errorCode
+        return ( connectionStatus , errorMsg )
     
     
 
