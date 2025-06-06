@@ -2,9 +2,16 @@
 A GUI interface for Ollama and other self hosted LLMs.
 Originally written March 28, 2025 by Erik Nykwest
 Copyright (c) 2025, MIT License
+
+TODO
+- refactor to put backend utility into utils folder
+- there is a bug where settings don't load properly in new windows (two open at once)
+- implement loading models with transformer pipeline
 '''
 
 # src/main.py
+import importlib
+#import utils # dynamically imported with importlib
 from gui.chat_window import ChatWindow as baseGUI
 import tkinter as tk #TODO, further refactoring needed to seperate GUI and backend logic
 
@@ -23,13 +30,22 @@ class OllamaGui(baseGUI):
     """
     def __init__(self):
         super().__init__()
-        
-        # Set Default Settings
-        self.model = "codellama" # or whichever model
-        self.server_type = "podman" # or docker
-        
+        # DEBUG
+        # TODO change all references to self.model and server_type to self.settings...
+        self.model = self.settings["model"]
+        self.server_type = self.settings["server_type"]
+     
         # LLM server related things
         self.update_idletasks() # ensure the widget has updated
+        try:
+            # Dynamically import the server class
+            server_class_name = f"{self.server_type.capitalize()}Server"
+            servers_module = importlib.import_module("utils.servers")        
+            self.server = getattr(servers_module, server_class_name)() # instanciate server object
+        except:
+            print('Servers TBD')
+            
+        # TODO move server logic below into utils server class
         # uncomment to close all servers when Xed out
         #self.protocol("WM_DELETE_WINDOW", self.exit)
 

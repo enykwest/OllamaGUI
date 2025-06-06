@@ -1,14 +1,16 @@
 # src/gui/chat_window.py
 import tkinter as tk
-from tkinter import scrolledtext, filedialog, messagebox
+from tkinter import scrolledtext, filedialog, messagebox, ttk
 import datetime
 import os
+import yaml
 
 #%% Define Classes
 class ChatWindow(tk.Tk):
     """
     Custom class that builds a GUI interface for Ollama and other self hosted LLMs.
     """
+    #TODO there is a bug where settings don't load properly in new windows
     def __init__(self):
         super().__init__()
         
@@ -32,19 +34,127 @@ class ChatWindow(tk.Tk):
                 "Exit": self.destroy,
             },
             "Options": {
-                "Settings": self.do_nothing,
+                "Settings": self.open_settings_window,
             },
         }
 
         # Create the menu bar
         self.create_menu()
+        
+        # load startup settings
+        # settings / presets are saved as yaml files / python dictionaries
+        try:
+            self.load_settings(self.STARTUP_SETTINGS_FILE)
+        except Exception as e:
+            print(f"Exception {e} encountered opening startup settings file {self.STARTUP_SETTINGS_FILE}. Using default settings.")
+            # use default settings instead
+            self.settings = {
+                "model": "codellama",
+                "server_type": "podman"
+            }
+            
+        return
 
 
     # Placeholder function for new features
     @staticmethod
     def do_nothing():
         print("Placeholder Function Activated")
-    
+        
+    @property
+    def STARTUP_SETTINGS_FILE(self):
+        return "OllamaGUI_StartupSettings.yaml"
+
+
+    def load_settings(self, filepath):
+        with open(filepath, "r") as f:
+            loaded = yaml.safe_load(f)
+            self.settings = loaded
+
+
+    def save_settings(self, filepath):
+        with open(filepath, "w") as f:
+            yaml.dump(self.settings, f)
+
+
+    def open_settings_window(self):
+        settings_win = tk.Toplevel(self)
+        settings_win.title("Settings")
+        settings_win.grab_set()
+
+        # Server Type
+        server_frame = ttk.LabelFrame(settings_win, text="Server Type")
+        server_frame.pack(fill="x", padx=10, pady=(10, 5))
+
+        server_types = [
+            ("Ollama", "ollama"),
+            ("Ollama via Podman", "podman"),
+            ("Ollama via Docker", "docker"),
+            ("Transformers Pipeline", "transformers"),
+        ]
+        server_var = tk.StringVar(value=self.settings.get("server_type", "podman"))
+
+        for label, value in server_types:
+            ttk.Radiobutton(server_frame, text=label, variable=server_var, value=value).pack(anchor="w", padx=5, pady=2)
+
+        # LLM Model
+        model_frame = ttk.Frame(settings_win)
+        model_frame.pack(fill="x", padx=10, pady=(5, 10))
+        ttk.Label(model_frame, text="LLM Model:").pack(side="left", padx=(0, 8))
+        model_var = tk.StringVar(value=self.settings.get("model", "codellama"))
+        model_entry = ttk.Entry(model_frame, textvariable=model_var, width=30)
+        model_entry.pack(side="left", fill="x", expand=True)
+
+        ### Buttons
+        # Define Button effects
+        def load_preset():
+            path = filedialog.askopenfilename(
+                title="Load Preset",
+                filetypes=[("YAML files", "*.yaml;*.yml"), ("All files", "*.*")]
+            )
+            if path:
+                try:
+                    self.load_settings(path)
+                    server_var.set(self.settings.get("server_type", "podman"))
+                    model_var.set(self.settings.get("model", "codellama"))
+                    messagebox.showinfo("Preset Loaded", f"Preset loaded from {os.path.basename(path)}")
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to load preset: {e}")
+                    
+        def save_preset():
+            path = filedialog.asksaveasfilename(
+                title="Save Preset",
+                defaultextension=".yaml",
+                filetypes=[("YAML files", "*.yaml;*.yml"), ("All files", "*.*")]
+            )
+            if path:
+                try:
+                    temp_settings = {
+                        "server_type": server_var.get(),
+                        "model": model_var.get()
+                    }
+                    with open(path, "w") as f:
+                        yaml.dump(temp_settings, f)
+                    messagebox.showinfo("Preset Saved", f"Preset saved as {os.path.basename(path)}")
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to save preset: {e}")
+        
+        def save_changes():
+            self.settings["server_type"] = server_var.get()
+            self.settings["model"] = model_var.get()
+            self.save_settings(self.STARTUP_SETTINGS_FILE)
+            messagebox.showinfo("Settings Saved", "Settings have been saved.")
+            settings_win.destroy()
+        
+        # Create Buttons
+        button_frame = ttk.Frame(settings_win)
+        button_frame.pack(fill="x", padx=10, pady=(0, 10))
+        # Button order: "Load Preset", "Save Preset", "Save Changes", "Cancel"
+        ttk.Button(button_frame, text="Load Preset", command=load_preset).pack(side="left", padx=(0,5))
+        ttk.Button(button_frame, text="Save Preset", command=save_preset).pack(side="left", padx=(0,5))
+        ttk.Button(button_frame, text="Save Changes", command=save_changes).pack(side="left", padx=(5,0))
+        ttk.Button(button_frame, text="Cancel", command=settings_win.destroy).pack(side="left")
+
 
     def create_widgets(self):
         # 1. Create a label widget for the chat window
