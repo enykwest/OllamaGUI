@@ -17,8 +17,43 @@ class ChatWindow(tk.Tk):
         self.filename = f"Untitled-{current_datetime.strftime('%Y-%m-%d-%H%M%S')}.md"
         self.title(self.filename)
         
+        # Create the main content area
         self.geometry("400x300")
-        
+        self.create_widgets()
+
+        # Set Menu bar options
+        self.menu_bar_options = [
+            ['File',
+                ['New', self.new_window],
+                ['Open', self.open_file],
+                ['Save', self.save_file],
+                ['Save As', self.save_as],
+                ['---'],  # Separator
+                ['Exit', self.destroy]
+            ],
+            ['Edit',
+                ['Undo (TBD)', self.do_nothing],
+                ['---'],
+                ['Cut (TBD)', self.do_nothing],
+                ['Copy (TBD)', self.do_nothing],
+                ['Paste (TBD)', self.do_nothing]
+            ],
+            ['Options',
+                ['Settings (TBD)', self.do_nothing]
+            ]
+        ]
+
+        # Create the menu bar
+        self.create_menu()
+
+
+    # Placeholder function for new features
+    @staticmethod
+    def do_nothing():
+        print("Placeholder Function Activated")
+    
+
+    def create_widgets(self):
         # 1. Create a label widget for the chat window
         self.chat_history = scrolledtext.ScrolledText(self, wrap="word", width=40, height=10)
         self.chat_history.insert(tk.INSERT, 'Hello World!\n\n')
@@ -33,50 +68,35 @@ class ChatWindow(tk.Tk):
         # 3. Create an entry widget for the user to input their message
         self.user_prompt = tk.Text(self, height=5)
         self.user_prompt.pack(side='left', fill='x', expand=True, padx=5, pady=5)
-        
-        # Create the menu bar
-        self.create_menu()
 
-    # Placeholder function for new features
-    @staticmethod
-    def do_nothing():
-        print("Placeholder Function Activated")
-    
+
     # Add the create_menu method
     def create_menu(self):
-        """Creates the menu bar and menu items"""
-        # Creating the toplevel menu
-        menu_bar = tk.Menu(self)
+        """Creates the menu bar and menu items from self.menu_bar_options"""
+        self.menu_bar = tk.Menu(self)
         
-        # Creating the File menu
-        file_menu = tk.Menu(menu_bar, tearoff=0)
-        file_menu.add_command(label="New", command=self.new_window)
-        file_menu.add_command(label="Open", command=self.open_file)
-        file_menu.add_command(label="Save", command=self.save_file)
-        file_menu.add_command(label="Save As", command=self.save_as)
-        file_menu.add_separator()
-        #file_menu.add_command(label="Exit", command=self.destroy) # Default behavior
-        file_menu.add_command(label="Exit", command=self.exit)
-        # Uncomment to redirect the "X" button from self.destroy to self.exit
-        #self.protocol("WM_DELETE_WINDOW", self.exit)
-        menu_bar.add_cascade(label="File", menu=file_menu)
+        def add_menu_items(menu, items):
+            for item in items:
+                if isinstance(item, list):
+                    # Submenu or command
+                    if len(item) == 2 and callable(item[1]):
+                        menu.add_command(label=item[0], command=item[1])
+                    elif len(item) > 1 and all(isinstance(sub, list) for sub in item[1:]):
+                        # Nested submenu
+                        submenu = tk.Menu(menu, tearoff=0)
+                        add_menu_items(submenu, item[1:])
+                        menu.add_cascade(label=item[0], menu=submenu)
+                elif item == '---':
+                    menu.add_separator()
         
-        # Creating the Edit menu
-        edit_menu = tk.Menu(menu_bar, tearoff=0)
-        edit_menu.add_command(label="Undo (TBD)", command=self.do_nothing)
-        edit_menu.add_separator()
-        edit_menu.add_command(label="Cut (TBD)", command=self.do_nothing)
-        edit_menu.add_command(label="Copy (TBD)", command=self.do_nothing)
-        edit_menu.add_command(label="Paste (TBD)", command=self.do_nothing)
-        menu_bar.add_cascade(label="Edit", menu=edit_menu)
-        
-        # Creating the Options menu
-        options_menu = tk.Menu(menu_bar, tearoff=0)
-        options_menu.add_command(label="Context", command=self.do_nothing)
-        menu_bar.add_cascade(label="Options", menu=options_menu)
-        
-        # Adding the menu bar to the window
-        self.config(menu=menu_bar)
+        for menu_def in self.menu_bar_options:
+            menu_label = menu_def[0]
+            menu_items = menu_def[1:]
+            new_menu = tk.Menu(self.menu_bar, tearoff=0)
+            add_menu_items(new_menu, menu_items)
+            self.menu_bar.add_cascade(label=menu_label, menu=new_menu)
+
+        self.config(menu=self.menu_bar)
 
 
     def exit(self):
@@ -159,6 +179,3 @@ if __name__ == "__main__":
     chatWindow = ChatWindow()
     chatWindow.mainloop()
 
-    # Inheritance Example
-    app = ExampleChatWindow()
-    app.mainloop()

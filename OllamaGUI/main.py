@@ -6,7 +6,7 @@ Copyright (c) 2025, MIT License
 
 # src/main.py
 from gui.chat_window import ChatWindow as baseGUI
-import tkinter as tk #Debug, this code should be moved to utils
+import tkinter as tk #TODO, further refactoring needed to seperate GUI and backend logic
 
 # Add Backend to ChatWindow
 import subprocess
