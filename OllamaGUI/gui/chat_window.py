@@ -22,26 +22,19 @@ class ChatWindow(tk.Tk):
         self.create_widgets()
 
         # Set Menu bar options
-        self.menu_bar_options = [
-            ['File',
-                ['New', self.new_window],
-                ['Open', self.open_file],
-                ['Save', self.save_file],
-                ['Save As', self.save_as],
-                ['---'],  # Separator
-                ['Exit', self.destroy]
-            ],
-            ['Edit',
-                ['Undo (TBD)', self.do_nothing],
-                ['---'],
-                ['Cut (TBD)', self.do_nothing],
-                ['Copy (TBD)', self.do_nothing],
-                ['Paste (TBD)', self.do_nothing]
-            ],
-            ['Options',
-                ['Settings (TBD)', self.do_nothing]
-            ]
-        ]
+        self.menu_bar_options = {
+            "File": {
+                "New": self.new_window,
+                "Open": self.open_file,
+                "Save": self.save_file,
+                "Save As": self.save_as,
+                "---": None,  # Separator
+                "Exit": self.destroy,
+            },
+            "Options": {
+                "Settings": self.do_nothing,
+            },
+        }
 
         # Create the menu bar
         self.create_menu()
@@ -72,33 +65,57 @@ class ChatWindow(tk.Tk):
 
     # Add the create_menu method
     def create_menu(self):
-        """Creates the menu bar and menu items from self.menu_bar_options"""
         self.menu_bar = tk.Menu(self)
-        
-        def add_menu_items(menu, items):
-            for item in items:
-                if isinstance(item, list):
-                    # Submenu or command
-                    if len(item) == 2 and callable(item[1]):
-                        menu.add_command(label=item[0], command=item[1])
-                    elif len(item) > 1 and all(isinstance(sub, list) for sub in item[1:]):
-                        # Nested submenu
-                        submenu = tk.Menu(menu, tearoff=0)
-                        add_menu_items(submenu, item[1:])
-                        menu.add_cascade(label=item[0], menu=submenu)
-                elif item == '---':
-                    menu.add_separator()
-        
-        for menu_def in self.menu_bar_options:
-            menu_label = menu_def[0]
-            menu_items = menu_def[1:]
-            new_menu = tk.Menu(self.menu_bar, tearoff=0)
-            add_menu_items(new_menu, menu_items)
-            self.menu_bar.add_cascade(label=menu_label, menu=new_menu)
-
+        for top_menu, submenu_dict in self.menu_bar_options.items():
+            menu = tk.Menu(self.menu_bar, tearoff=0)
+            self._add_menu_items(menu, submenu_dict)
+            self.menu_bar.add_cascade(label=top_menu, menu=menu)
         self.config(menu=self.menu_bar)
+        
+        
+    def _add_menu_items(self, menu, items_dict):
+        for label, action in items_dict.items():
+            if label == "---":
+                menu.add_separator()
+            elif callable(action):
+                menu.add_command(label=label, command=action)
+            elif isinstance(action, dict):
+                submenu = tk.Menu(menu, tearoff=0)
+                self._add_menu_items(submenu, action)
+                menu.add_cascade(label=label, menu=submenu)
 
 
+    def add_menu_item(self, action, *fullpath):
+        """
+        Add a menu item at the specified nested path.
+        Usage: add_menu_item(action, 'Menu', 'Submenu', ... , 'Item')
+        The last element in fullpath is the item's label.
+        """
+        if not fullpath:
+            raise ValueError("You must provide at least one menu label.")
+        
+        submenu = self.menu_bar_options
+        for label in fullpath[:-1]:
+            submenu = submenu.setdefault(label, {}) # create key if it doesn't exist, else do nothing
+        submenu[fullpath[-1]] = action
+        
+        
+    def remove_menu_item(self, *fullpath):
+        """
+        Remove a menu item at the specified nested path.
+        Usage: remove_menu_item('Menu', 'Submenu', ... , 'Item')
+        The last element in fullpath is the item's label.
+        """
+        if not fullpath:
+            raise ValueError("You must provide at least one menu label.")
+        submenu = self.menu_bar_options
+        for label in fullpath[:-1]:
+            submenu = submenu.get(label)
+            if not isinstance(submenu, dict):
+                return  # Path doesn't exist
+        submenu.pop(fullpath[-1], None)
+        
+        
     def exit(self):
         '''Tells the program what to do when `File->Exit` is selected.'''
         self.destroy()
