@@ -47,7 +47,7 @@ class OllamaGui(baseGUI):
             
         # TODO move server logic below into utils server class
         # uncomment to close all servers when Xed out
-        #self.protocol("WM_DELETE_WINDOW", self.exit)
+        self.protocol("WM_DELETE_WINDOW", self.exit)
 
         # Check if LLM service is running and start/fix it if possible
         connectionStatus , errorMsg = self.test_LLM_connection(fix=True, previousAttempt=None)
@@ -127,7 +127,7 @@ class OllamaGui(baseGUI):
 
     #%% Define backed / interface / debug functions
     #TODO move these to a seperate backend script
-    def _send_command(self, prompt, formatResponse=True):
+    def _send_command(self, prompt, formatResponse=True, fix=True):
         '''
         Send a command to the LLM. 
 
@@ -159,13 +159,21 @@ class OllamaGui(baseGUI):
 
         # Check for errors and return response
         if response.returncode != 0: # if there was an error
-            raise LLMConnectionError
-            #errorMessage = '\nOops! Something went wrong! Error Code: {}\n\n'.format(response.returncode)
+            errorMessage = '\nOops! Something went wrong! Error Code: {}\n\n'.format(response.returncode)
             # We could also decode the stderr, but that should already be printed for us
-            #print(errorMessage)
+            print(errorMessage)
+            
             # see if LLM service is running and fix it if possible
-            #errorCode, errorMsg = self.test_LLM_connection(response) # DANGER! Possible recursion!        
-            #response = errorMessage
+            # Warning! Recursion!
+            if fix:
+                connectionStatus, errorMsg = self.test_LLM_connection(fix=True, previousAttempt=response) #recursive
+                if connectionStatus: # fixed connection, re-try
+                    response = self._send_command(prompt, formatResponse, fix=False) # recursive, fix=False to prevent looping
+                else:
+                    response = errorMessage + errorMsg 
+            else:
+                response = errorMessage
+            
         elif formatResponse:        
             # decode byte response
             response = str(response.stdout.decode()) # str is probably overkill, but I suspect safer 
@@ -190,7 +198,7 @@ class OllamaGui(baseGUI):
         
         try:
             if previousAttempt is None:
-                response = self._send_command(r"hello", formatResponse=False)
+                response = self._send_command(r"hello", formatResponse=False, fix = False) # fix = False to prevent recursion
             else:
                 response = previousAttempt
                 
@@ -220,7 +228,7 @@ class OllamaGui(baseGUI):
              
                 # Trying again
                 print('Testing LLM again...\n\n')
-                response = self._send_command(r"hello", formatResponse=False)
+                response = self._send_command(r"hello", formatResponse=False, fix=False) # fix=False to prevent recursion
                 stderr = response.stderr.decode()
                 
                 
