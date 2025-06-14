@@ -4,24 +4,29 @@ def get_llm_backend(settings):
     try:
         server_type = settings["server_type"]
         model = settings["model"]
-        return get_llm_backend.servers[server_type](model=model)
+        return server_dict[server_type](model=model)
     except Exception:
         # Fallback to Podman if any error occurs (missing key or unknown server_type)
-        return get_llm_backend.servers["podman"](model="codellama")
+        return server_dict["podman"](model="codellama")
+# dictionary to hold all server classes
+server_dict = {}
 
-get_llm_backend.servers = {}
 
-class LLMConnectionError(Exception):
-    pass
 
-class OllamaPodmanLLM:
-    def __init__(self, model="codellama"):
+#%% Server Classes
+# Example for future extension:
+# class OllamaDockerLLM:
+#     ...
+# server_dict["docker"] = OllamaDockerLLM
+
+
+class OllamaBaremetalLLM:
+    def __init__(self, model="gemma3:1b"):
         self.model = model
-        self.server_type = "podman"
 
     @property
     def prefix(self):
-        return self.server_type + r' exec ollama ollama run ' + self.model
+        return r'ollama run ' + self.model
 
     def _send_command(self, prompt, formatResponse=True, fix=True):
         prefix = self.prefix.split(" ")
@@ -44,6 +49,63 @@ class OllamaPodmanLLM:
             response = "\nOllama:\n" + response + "\n"
             print(response)
         return response
+
+
+    def test_LLM_connection(self, fix, previousAttempt):
+        '''
+        Should be customized to each server type to test for and fix common errors.
+
+        Parameters
+        ----------
+        fix : BOOL
+            Should the function attempt to fix a broken connection?
+        previousAttempt : TYPE
+            The return of a previous _send_command.
+
+        Returns
+        -------
+        connectionStatus : BOOL
+            True if the connection has been re-established.
+        errorMsg : STR
+            Error message if connection cannot be re-established.
+
+        '''
+        connectionStatus = False
+        errorMsg = ""
+        try:
+            if previousAttempt is None:
+                response = self._send_command(r"hello", formatResponse=False, fix=False)
+            else:
+                response = previousAttempt
+                
+            if response.returncode == 0:
+                connectionStatus = True
+            elif fix:
+                pass # Customize to each server type
+        except FileNotFoundError:
+            # This can happen if the command passed to subprocess doesn't exist
+            # e.g.if Ollama isn't installed
+            errorMsg = "FileNotFoundError\nAre you sure your prefix is set correctly?\nIs Ollama installed?"
+            print(errorMsg)
+        return (connectionStatus, errorMsg)
+    
+    def exit(self):
+        pass # should be defined for each server type
+        
+# Register backend
+server_dict["ollama"] = OllamaBaremetalLLM
+
+
+class OllamaPodmanLLM(OllamaBaremetalLLM):
+    def __init__(self, model="codellama"):
+        self.model = model
+
+    @property
+    def prefix(self):
+        return r'podman exec ollama ollama run ' + self.model
+
+    # inherited    
+    #def _send_command(self, prompt, formatResponse=True, fix=True):
 
     def test_LLM_connection(self, fix, previousAttempt):
         connectionStatus = False
@@ -94,21 +156,24 @@ class OllamaPodmanLLM:
         return subprocess.run(command, capture_output=True)
 
     def start_ollama_container(self):
-        command = self.server_type + r' start ollama'
+        command = r'podman start ollama'
         return subprocess.run(command, capture_output=True)
 
     def stop_ollama_container(self):
-        command = self.server_type + r' stop ollama'
+        command = r'podman stop ollama'
         return subprocess.run(command, capture_output=True)
 
     def exit(self):
         print('Stopping Container Service')
-        self.stop_server()
+        try: 
+            self.stop_server()
+        except FileNotFoundError: # this can happen if podman isn't installed
+            errorMsg = "FileNotFoundError\nAre you sure your prefix is set correctly?\nIs Ollama installed?"
+            print(errorMsg)
 
-# Register backends
-get_llm_backend.servers["podman"] = OllamaPodmanLLM
+# Register backend
+server_dict["podman"] = OllamaPodmanLLM
 
-# Example for future extension:
-# class OllamaDockerLLM:
-#     ...
-# get_llm_backend.servers["docker"] = OllamaDockerLLM
+
+
+

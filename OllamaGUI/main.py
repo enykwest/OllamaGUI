@@ -1,3 +1,5 @@
+# currently, changing settins doesn't change the currently loaded model, you need to create a new window.
+
 from gui.chat_window import ChatWindow as baseGUI
 import tkinter as tk
 from utils.llm_backend import get_llm_backend
@@ -15,7 +17,13 @@ class OllamaGui(baseGUI):
             self.push_to_chat_window(f'{errorMsg}')
 
     def exit(self):
-        self.llm_backend.exit()
+        try:
+            self.llm_backend.exit()
+            
+        except AttributeError:
+            pass # llm_backend.exit not defined 
+        except Exception as e:
+            print(f"Closing backend failed with: {e}") # without the try-except the GUI may refuse to close
         print('Closing GUI\n\n')
         self.destroy()
 

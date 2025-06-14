@@ -241,7 +241,8 @@ class ChatWindow(tk.Tk):
     
     def new_window(self):
         """Create a new chat window"""
-        new_chat = ChatWindow()
+        #new_chat = ChatWindow()
+        new_chat = self.__init__()
         new_chat.mainloop()
     
     def open_file(self):
