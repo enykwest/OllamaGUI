@@ -20,6 +20,10 @@ server_dict = {}
 # server_dict["docker"] = OllamaDockerLLM
 
 
+
+
+
+
 class OllamaBaremetalLLM:
     def __init__(self, model="gemma3:1b"):
         self.model = model
@@ -175,5 +179,53 @@ class OllamaPodmanLLM(OllamaBaremetalLLM):
 server_dict["podman"] = OllamaPodmanLLM
 
 
+from transformers import pipeline
+import torch
+class TransformersLLM:
+    def __init__(self, model="microsoft/DialoGPT-small"):
+        
+        self.model = model
+        self.pipe = pipeline("text-generation", model=model, torch_dtype=torch.bfloat16)
 
+
+    def _send_command(self, prompt, formatResponse=True, fix=True):
+        
+        response = self.pipe(prompt, max_new_tokens=50)
+        
+        return response
+
+
+    def test_LLM_connection(self, fix, previousAttempt):
+        '''
+        Should be customized to each server type to test for and fix common errors.
+
+        Parameters
+        ----------
+        fix : BOOL
+            Should the function attempt to fix a broken connection?
+        previousAttempt : TYPE
+            The return of a previous _send_command.
+
+        Returns
+        -------
+        connectionStatus : BOOL
+            True if the connection has been re-established.
+        errorMsg : STR
+            Error message if connection cannot be re-established.
+
+        '''
+        connectionStatus = False
+        errorMsg = ""
+        try:
+            self._send_command(r"hello", formatResponse=False, fix=False)
+            connectionStatus = True
+        except:
+            raise
+        return (connectionStatus, errorMsg)
+    
+    def exit(self):
+        pass # should be defined for each server type
+        
+# Register backend
+server_dict["transformers"] = TransformersLLM
 
