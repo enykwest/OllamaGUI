@@ -43,15 +43,7 @@ class OllamaGui(baseGUI):
         self.user_prompt.delete('1.0', tk.END)
         self.chat_history.update_idletasks()
 
-        try:
-            response = self.llm_backend._send_command(prompt)
-        except FileNotFoundError:
-            errorMsg = "FileNotFoundError\nAre you sure your prefix is set correctly?\nIs Ollama installed?"
-            print(errorMsg)
-            self.push_to_chat_window(errorMsg)
-            return 1
-        except Exception:
-            self.llm_backend.test_LLM_connection(fix=True, previousAttempt=None)
+        response = self.llm_backend._send_command(prompt)
 
         self.chat_history.config(state=tk.NORMAL)
         self.chat_history.insert(tk.INSERT, response)

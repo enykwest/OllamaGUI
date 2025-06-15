@@ -36,22 +36,42 @@ class OllamaBaremetalLLM:
         prefix = self.prefix.split(" ")
         command = prefix + [prompt]
         print(command)
-        response = subprocess.run(command, capture_output=True)
-        if response.returncode != 0:
-            errorMessage = '\nOops! Something went wrong! Error Code: {}\n\n'.format(response.returncode)
-            print(errorMessage)
-            if fix:
-                connectionStatus, errorMsg = self.test_LLM_connection(fix=True, previousAttempt=response)
-                if connectionStatus:
-                    response = self._send_command(prompt, formatResponse, fix=False)
-                else:
-                    response = errorMessage + errorMsg
+                
+        try:
+            response = subprocess.run(command, capture_output=True)
+        except FileNotFoundError:
+            # Subprocess will throw this error if it can't find the command
+            # e.g.if Ollama isn't installed
+            errorMsg = "FileNotFoundError\nAre you sure your prefix is set correctly?\nIs Ollama installed?"
+            print(errorMsg)
+            
+            if formatResponse:
+                return errorMsg 
             else:
-                response = errorMessage
-        elif formatResponse:
-            response = str(response.stdout.decode())
-            response = "\nOllama:\n" + response + "\n"
-            print(response)
+                raise FileNotFoundError
+        
+        if not formatResponse:
+            print(f"Response returncode: {response.returncode}")
+            return response
+        else:
+            if response.returncode == 0: # if no errors
+                response = str(response.stdout.decode())
+                response = f"\n{self.model}:\n" + response + "\n"
+                print(response)
+            else:
+                errorMessage = '\nOops! Something went wrong! Error Code: {}\n\n'.format(response.returncode)
+                print(errorMessage)
+                
+                if fix:
+                    connectionStatus, errorMsg = self.test_LLM_connection(fix=True, previousAttempt=response)
+                    if connectionStatus:
+                        # if fixed try again
+                        response = self._send_command(prompt, formatResponse, fix=False)
+                    else:
+                        response = errorMessage + errorMsg
+                else:
+                    response = errorMessage
+        
         return response
 
 
@@ -119,6 +139,7 @@ class OllamaPodmanLLM(OllamaBaremetalLLM):
                 response = self._send_command(r"hello", formatResponse=False, fix=False)
             else:
                 response = previousAttempt
+                
             if response.returncode == 0:
                 connectionStatus = True
             elif fix:
@@ -141,6 +162,7 @@ class OllamaPodmanLLM(OllamaBaremetalLLM):
                 print('Testing LLM again...\n\n')
                 response = self._send_command(r"hello", formatResponse=False, fix=False)
                 stderr = response.stderr.decode()
+                
                 if response.returncode == 0:
                     connectionStatus = True
                 else:
@@ -150,6 +172,7 @@ class OllamaPodmanLLM(OllamaBaremetalLLM):
             errorMsg = "FileNotFoundError\nAre you sure your prefix is set correctly?\nIs Ollama installed?"
             print(errorMsg)
         return (connectionStatus, errorMsg)
+    
 
     def start_server(self):
         command = r'podman machine start'
