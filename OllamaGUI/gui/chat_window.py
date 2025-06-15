@@ -52,8 +52,6 @@ class ChatWindow(tk.Tk):
                 "model": "codellama",
                 "server_type": "podman"
             }
-            
-        return
 
 
     # Placeholder function for new features
@@ -239,10 +237,11 @@ class ChatWindow(tk.Tk):
             self.chat_history.insert(tk.END, f"You: {user_message}\n\n")
             self.user_prompt.delete("1.0", tk.END)  # Clear the input field
     
-    def new_window(self):
+    @classmethod
+    def new_window(cls):
         """Create a new chat window"""
         #new_chat = ChatWindow()
-        new_chat = self.__init__()
+        new_chat = cls() #.__init__()
         new_chat.mainloop()
     
     def open_file(self):
