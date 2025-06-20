@@ -75,6 +75,9 @@ class ChatWindow(tk.Tk):
             yaml.dump(self.settings, f)
 
 
+    #BUG, settings windows of new windows don't work
+    # I think it is because the new window main loop is nested
+    # inside of the new_window function
     def open_settings_window(self):
         settings_win = tk.Toplevel(self)
         settings_win.title("Settings")

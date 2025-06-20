@@ -1,13 +1,26 @@
 import subprocess
 
+# needs more work
 def get_llm_backend(settings):
     try:
         server_type = settings["server_type"]
         model = settings["model"]
         return server_dict[server_type](model=model)
-    except Exception:
-        # Fallback to Podman if any error occurs (missing key or unknown server_type)
-        return server_dict["podman"](model="codellama")
+    except OSError as e:
+        print(f"{e} , This can happen if you are" +
+              " trying to access a gated repo on HuggingFace" +
+              " using the Transformers pipeline. " +
+              "Try logging in first."
+              )
+        print(r"https://huggingface.co/docs/huggingface_hub/en/guides/cli#huggingface-cli-login")
+        print(r"https://huggingface.co/docs/hub/security-tokens")
+        print(r"Turn on the read permissions under repos")
+        raise # todo, return placeholder_llm so user can change the llm settings
+    except Exception as e:
+        raise # todo, return placeholder_llm so user can change the llm settings
+
+    pass # todo, return placeholder_llm so user can change the llm settings
+
 # dictionary to hold all server classes
 server_dict = {}
 
@@ -205,17 +218,41 @@ server_dict["podman"] = OllamaPodmanLLM
 from transformers import pipeline
 import torch
 class TransformersLLM:
+    # Note that the default location for the model cache is: C:\Users\<USER>\.cache\huggingface\hub\<model--name>\snapshots
     def __init__(self, model="microsoft/DialoGPT-small"):
         
         self.model = model
         self.pipe = pipeline("text-generation", model=model, torch_dtype=torch.bfloat16)
 
 
+    # old
     def _send_command(self, prompt, formatResponse=True, fix=True):
         
-        response = self.pipe(prompt, max_new_tokens=50)
+        response = self.pipe(prompt, max_new_tokens=50,)
+        
+        if formatResponse:
+            response = response[0]['generated_text']
         
         return response
+
+
+    # new
+    def _send_command(self, prompt, formatResponse=True, fix=True):
+        # for details see: https://huggingface.co/google/gemma-3-1b-it?library=transformers
+        messages = [
+                    {"role": "user", "content": prompt},
+                    ]
+        response = self.pipe(messages, max_new_tokens=50,)
+        
+        if formatResponse:
+            response = response[0]['generated_text'][-1]
+            print(response['role']) # debug
+            response = response['content']
+            print(response) # debug
+            
+        return response
+
+
 
 
     def test_LLM_connection(self, fix, previousAttempt):
