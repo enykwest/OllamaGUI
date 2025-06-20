@@ -4,6 +4,9 @@ from tkinter import scrolledtext, filedialog, messagebox, ttk
 import datetime
 import os
 import yaml
+# one possible solution for new windows
+import subprocess
+import sys
 
 #%% Define Classes
 class ChatWindow(tk.Tk):
@@ -240,12 +243,16 @@ class ChatWindow(tk.Tk):
             self.chat_history.insert(tk.END, f"You: {user_message}\n\n")
             self.user_prompt.delete("1.0", tk.END)  # Clear the input field
     
+    # old
     @classmethod
     def new_window(cls):
         """Create a new chat window"""
         #new_chat = ChatWindow()
         new_chat = cls() #.__init__()
         new_chat.mainloop()
+    # new
+    def new_window(self):
+        subprocess.Popen([sys.executable, sys.argv[0]])
     
     def open_file(self):
         """Open a file and load its contents into chat_history"""
