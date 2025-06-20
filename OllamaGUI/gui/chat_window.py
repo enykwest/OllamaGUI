@@ -46,15 +46,19 @@ class ChatWindow(tk.Tk):
         
         # load startup settings
         # settings / presets are saved as yaml files / python dictionaries
+        # default settings
+        self.settings = {
+            "model": "microsoft/DialoGPT-small",
+            "server_type": "transformers",
+            "max_new_tokens": 10,
+            "prev_chat_context": 1,
+        }
         try:
             self.load_settings(self.STARTUP_SETTINGS_FILE)
         except Exception as e:
             print(f"Exception {e} encountered opening startup settings file {self.STARTUP_SETTINGS_FILE}. Using default settings.")
             # use default settings instead
-            self.settings = {
-                "model": "codellama",
-                "server_type": "podman"
-            }
+
 
 
     # Placeholder function for new features
@@ -70,7 +74,7 @@ class ChatWindow(tk.Tk):
     def load_settings(self, filepath):
         with open(filepath, "r") as f:
             loaded = yaml.safe_load(f)
-            self.settings = loaded
+            self.settings.update(loaded)
 
 
     def save_settings(self, filepath):
@@ -78,18 +82,19 @@ class ChatWindow(tk.Tk):
             yaml.dump(self.settings, f)
 
 
-    #BUG, settings windows of new windows don't work
-    # I think it is because the new window main loop is nested
-    # inside of the new_window function
     def open_settings_window(self):
         settings_win = tk.Toplevel(self)
         settings_win.title("Settings")
         settings_win.grab_set()
 
-        # Server Type
-        server_frame = ttk.LabelFrame(settings_win, text="Server Type")
-        server_frame.pack(fill="x", padx=10, pady=(10, 5))
-
+        # Parent frame for horizontal layout
+        server_and_tokens_frame = ttk.Frame(settings_win)
+        server_and_tokens_frame.pack(fill="x", padx=10, pady=(10, 5))
+        
+        # Server Type Frame (left)
+        server_frame = ttk.LabelFrame(server_and_tokens_frame, text="Server Type")
+        server_frame.pack(side="left", fill="y", expand=True)
+        
         server_types = [
             ("Ollama", "ollama"),
             ("Ollama via Podman", "podman"),
@@ -100,6 +105,24 @@ class ChatWindow(tk.Tk):
 
         for label, value in server_types:
             ttk.Radiobutton(server_frame, text=label, variable=server_var, value=value).pack(anchor="w", padx=5, pady=2)
+
+        
+        # Tokens/Context frame (right)
+        tokens_frame = ttk.LabelFrame(server_and_tokens_frame, text="Generation Settings")
+        tokens_frame.pack(side="left", fill="y", padx=(10,0))
+        
+        # max_new_tokens
+        ttk.Label(tokens_frame, text="max_new_tokens:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        max_new_tokens_var = tk.IntVar(value=self.settings.get("max_new_tokens", 10))
+        max_new_tokens_entry = ttk.Entry(tokens_frame, textvariable=max_new_tokens_var, width=10)
+        max_new_tokens_entry.grid(row=0, column=1, padx=5, pady=5)
+        
+        # prev_chat_context
+        ttk.Label(tokens_frame, text="prev_chat_context:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
+        prev_chat_context_var = tk.IntVar(value=self.settings.get("prev_chat_context", 1))
+        prev_chat_context_entry = ttk.Entry(tokens_frame, textvariable=prev_chat_context_var, width=10)
+        prev_chat_context_entry.grid(row=1, column=1, padx=5, pady=5)
+
 
         # LLM Model
         model_frame = ttk.Frame(settings_win)
@@ -146,6 +169,8 @@ class ChatWindow(tk.Tk):
         def save_changes():
             self.settings["server_type"] = server_var.get()
             self.settings["model"] = model_var.get()
+            self.settings["max_new_tokens"] = max_new_tokens_var.get()
+            self.settings["prev_chat_context"] = prev_chat_context_var.get()
             self.save_settings(self.STARTUP_SETTINGS_FILE)
             messagebox.showinfo("Settings Saved", "Settings have been saved.")
             settings_win.destroy()

@@ -1,2 +1,4 @@
-model: microsoft/DialoGPT-small
+max_new_tokens: 50
+model: google/gemma-3-1b-it
+prev_chat_context: 1
 server_type: transformers

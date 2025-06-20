@@ -230,6 +230,7 @@ class TransformersLLM:
         self.pipe = pipeline("text-generation", model=model, torch_dtype=torch.bfloat16)
         self.settings = settings # note, dictionaries are mutable!
         
+        
     def _send_command(self, prompt, formatResponse=True, fix=True):
         # for details see: https://huggingface.co/google/gemma-3-1b-it?library=transformers
         messages = [
@@ -237,7 +238,7 @@ class TransformersLLM:
                     ]
         
         response = self.pipe(messages, 
-                             max_new_tokens=self.settings.get('max_new_tokens', 50),
+                             max_new_tokens=self.settings['max_new_tokens'],
                              )
         
         if formatResponse:
