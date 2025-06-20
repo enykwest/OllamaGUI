@@ -1,4 +1,4 @@
-max_new_tokens: 50
-model: google/gemma-3-1b-it
-prev_chat_context: 1
+max_new_tokens: 15
+model: microsoft/DialoGPT-small
+prev_chat_context: 5
 server_type: transformers

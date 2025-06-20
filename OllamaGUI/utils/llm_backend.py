@@ -243,6 +243,7 @@ class TransformersLLM:
         self.model = model
         self.pipe = pipeline("text-generation", model=model, torch_dtype=torch.bfloat16)
         self.settings = settings # note, dictionaries are mutable!
+        self.chat_history = []
         
         
     def _send_command(self, prompt, formatResponse=True, fix=True):
@@ -251,17 +252,45 @@ class TransformersLLM:
                     {"role": "user", "content": prompt},
                     ]
         
-        response = self.pipe(messages, 
+        response = self.pipe(self.chat_history + messages, # send whole chat history, not just most recent message
                              max_new_tokens=self.settings['max_new_tokens'],
                              )
         
         if formatResponse:
             response = response[0]['generated_text'][-1]
-            response = response['role'] + ": " + response['content'] +'\n'
+            self.chat_history += messages # append to end of history
+            self.chat_history.append(response)
+            self.manage_chat_history()
+            response = response['role'].capitalize() + ": " + response['content'] +'\n'
             
         return response
 
 
+    def manage_chat_history(self,):
+        '''
+        Clean and maintain the in memory chat history.
+        
+        Gemma3 throws a *** jinja2.exceptions.TemplateError: Conversation roles must alternate user/assistant/user/assistant/...
+        if the history STARTS with an assistant message, so I am enforcing even histories only.
+
+        Returns
+        -------
+        None.
+
+        '''
+        # Chat history should always be a positive number
+        if self.settings['prev_chat_context'] < 2:
+            self.settings['prev_chat_context'] = 2
+        # gemma3 doesn't like odd histories
+        if self.settings['prev_chat_context'] % 2 != 0:
+            self.settings['prev_chat_context'] -= 1
+            
+        # add response to chat history, user prompt is included in response          
+        while len(self.chat_history) > self.settings['prev_chat_context']:
+            # remove oldest 2 messages
+            # gemma3 has issues with odd numbers
+            self.chat_history.pop(0)
+            self.chat_history.pop(0)
 
 
     def test_LLM_connection(self, fix, previousAttempt):

@@ -48,7 +48,6 @@ class OllamaGui(baseGUI):
 
     def send_prompt(self):
         prompt = self.user_prompt.get("1.0", tk.END)
-        print(prompt)
         self.chat_history.config(state=tk.NORMAL)
         self.chat_history.insert(tk.INSERT, "\nUser:\n" + prompt + '\n')
         self.chat_history.yview(tk.END)
