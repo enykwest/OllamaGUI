@@ -1,11 +1,12 @@
 import subprocess
+from warnings import warn
 
 # needs more work
 def get_llm_backend(settings):
     try:
         server_type = settings["server_type"]
         model = settings["model"]
-        return server_dict[server_type](model=model)
+        return server_dict[server_type](model=model, settings=settings)
     except OSError as e:
         print(f"{e} , This can happen if you are" +
               " trying to access a gated repo on HuggingFace" +
@@ -38,8 +39,10 @@ server_dict = {}
 
 
 class OllamaBaremetalLLM:
-    def __init__(self, model="gemma3:1b"):
+    def __init__(self, model="gemma3:1b", settings=None):
         self.model = model
+        if settings is not None:
+            warn("settings are not yet implemented for OllamaBaremetalLLM")
 
     @property
     def prefix(self):
@@ -134,8 +137,10 @@ server_dict["ollama"] = OllamaBaremetalLLM
 
 
 class OllamaPodmanLLM(OllamaBaremetalLLM):
-    def __init__(self, model="codellama"):
+    def __init__(self, model="codellama", settings=None):
         self.model = model
+        if settings is not None:
+            warn("settings are not yet implemented for OllamaPodmanLLM")
 
     @property
     def prefix(self):
@@ -219,36 +224,25 @@ from transformers import pipeline
 import torch
 class TransformersLLM:
     # Note that the default location for the model cache is: C:\Users\<USER>\.cache\huggingface\hub\<model--name>\snapshots
-    def __init__(self, model="microsoft/DialoGPT-small"):
+    def __init__(self, model="microsoft/DialoGPT-small", settings={}):
         
         self.model = model
         self.pipe = pipeline("text-generation", model=model, torch_dtype=torch.bfloat16)
-
-
-    # old
-    def _send_command(self, prompt, formatResponse=True, fix=True):
+        self.settings = settings # note, dictionaries are mutable!
         
-        response = self.pipe(prompt, max_new_tokens=50,)
-        
-        if formatResponse:
-            response = response[0]['generated_text']
-        
-        return response
-
-
-    # new
     def _send_command(self, prompt, formatResponse=True, fix=True):
         # for details see: https://huggingface.co/google/gemma-3-1b-it?library=transformers
         messages = [
                     {"role": "user", "content": prompt},
                     ]
-        response = self.pipe(messages, max_new_tokens=50,)
+        
+        response = self.pipe(messages, 
+                             max_new_tokens=self.settings.get('max_new_tokens', 50),
+                             )
         
         if formatResponse:
             response = response[0]['generated_text'][-1]
-            print(response['role']) # debug
-            response = response['content']
-            print(response) # debug
+            response = response['role'] + ": " + response['content']
             
         return response
 

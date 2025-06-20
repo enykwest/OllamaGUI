@@ -1,5 +1,15 @@
-# currently, changing settins doesn't change the currently loaded model, you need to create a new window.
+'''
 
+Bugs / ToDo
+- Currently, changing settins doesn't change the currently loaded model, you need to create a new window.
+- Need to add the ability to pass additional context (past prompts and responses)
+- Need to update settings window
+- use accelerate to split large models between gpu and cpu
+- need a placeholder llm
+- need setting for max_new_tokens
+- need setting for context window to send.
+
+'''
 from gui.chat_window import ChatWindow as baseGUI
 import tkinter as tk
 from utils.llm_backend import get_llm_backend
