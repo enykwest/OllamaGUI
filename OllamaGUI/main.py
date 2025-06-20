@@ -1,30 +1,33 @@
 '''
-
 Bugs / ToDo
-- Currently, changing settins doesn't change the currently loaded model, you need to create a new window.
+- Currently, changing settings doesn't change the currently loaded model, you need to create a new window or restart.
 - Need to add the ability to pass additional context (past prompts and responses)
-- Need to update settings window
 - use accelerate to split large models between gpu and cpu
-- need a placeholder llm
-- need setting for max_new_tokens
-- need setting for context window to send.
-
+- build settings window from backend?
 '''
 from gui.chat_window import ChatWindow as baseGUI
 import tkinter as tk
 from utils.llm_backend import get_llm_backend
+from utils.llm_backend import LLMConnectionError
+from utils.llm_backend import PlaceholderLLM
 
 class OllamaGui(baseGUI):
     def __init__(self):
         super().__init__()
-        self.llm_backend = get_llm_backend(self.settings)
-        self.protocol("WM_DELETE_WINDOW", self.exit)
+        try:
+            self.llm_backend = get_llm_backend(self.settings)
+            self.protocol("WM_DELETE_WINDOW", self.exit)
+    
+            connectionStatus, errorMsg = self.llm_backend.test_LLM_connection(fix=True, previousAttempt=None)
+            if connectionStatus:
+                self.push_to_chat_window(r'Hello World!')
+            else:
+                self.push_to_chat_window(f'{errorMsg}')
 
-        connectionStatus, errorMsg = self.llm_backend.test_LLM_connection(fix=True, previousAttempt=None)
-        if connectionStatus:
-            self.push_to_chat_window(r'Hello World!')
-        else:
-            self.push_to_chat_window(f'{errorMsg}')
+        except LLMConnectionError:
+            self.llm_backend = PlaceholderLLM()
+            self.push_to_chat_window('LLMConnectionError \n loading placeholder LLM \n Are your settings correct?')
+
 
     def exit(self):
         try:

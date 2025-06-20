@@ -1,6 +1,10 @@
 import subprocess
 from warnings import warn
 
+
+class LLMConnectionError(Exception):
+    pass
+
 # needs more work
 def get_llm_backend(settings):
     try:
@@ -8,7 +12,7 @@ def get_llm_backend(settings):
         model = settings["model"]
         return server_dict[server_type](model=model, settings=settings)
     except OSError as e:
-        print(f"{e} , This can happen if you are" +
+        print(f"OSError: {e}.\n This can happen if you are" +
               " trying to access a gated repo on HuggingFace" +
               " using the Transformers pipeline. " +
               "Try logging in first."
@@ -16,11 +20,9 @@ def get_llm_backend(settings):
         print(r"https://huggingface.co/docs/huggingface_hub/en/guides/cli#huggingface-cli-login")
         print(r"https://huggingface.co/docs/hub/security-tokens")
         print(r"Turn on the read permissions under repos")
-        raise # todo, return placeholder_llm so user can change the llm settings
+        raise LLMConnectionError("OSError encountered while loading backend.")
     except Exception as e:
-        raise # todo, return placeholder_llm so user can change the llm settings
-
-    pass # todo, return placeholder_llm so user can change the llm settings
+        raise LLMConnectionError(f"{e} encountered while loading backend.")
 
 # dictionary to hold all server classes
 server_dict = {}
@@ -34,7 +36,19 @@ server_dict = {}
 # server_dict["docker"] = OllamaDockerLLM
 
 
-
+class PlaceholderLLM:
+    def __init__(self, model=None, settings=None):
+        self.model=model
+        self.settings=settings
+        pass
+    
+    def test_LLM_connection(self, fix, previousAttempt):
+        return True , "Placeholder LLM"
+    
+    def _send_command(self, prompt):
+        return "Placeholder: I am a placeholder for a real LLM. Please update your settings."
+    
+server_dict["placeholder"] = PlaceholderLLM
 
 
 
@@ -243,7 +257,7 @@ class TransformersLLM:
         
         if formatResponse:
             response = response[0]['generated_text'][-1]
-            response = response['role'] + ": " + response['content']
+            response = response['role'] + ": " + response['content'] +'\n'
             
         return response
 

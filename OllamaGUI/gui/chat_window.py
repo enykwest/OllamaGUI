@@ -49,7 +49,7 @@ class ChatWindow(tk.Tk):
         # default settings
         self.settings = {
             "model": "microsoft/DialoGPT-small",
-            "server_type": "transformers",
+            "server_type": "placeholder",
             "max_new_tokens": 10,
             "prev_chat_context": 1,
         }
@@ -188,7 +188,6 @@ class ChatWindow(tk.Tk):
     def create_widgets(self):
         # 1. Create a label widget for the chat window
         self.chat_history = scrolledtext.ScrolledText(self, wrap="word", width=40, height=10)
-        self.chat_history.insert(tk.INSERT, 'Hello World!\n\n')
         self.chat_history.pack(side="top", fill='both', expand=True, padx=5, pady=5)
         
         # 2. Create a button to send the message
