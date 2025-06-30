@@ -234,95 +234,105 @@ class OllamaPodmanLLM(OllamaBaremetalLLM):
 server_dict["podman"] = OllamaPodmanLLM
 
 
-from transformers import pipeline
-import torch
-class TransformersLLM:
-    # Note that the default location for the model cache is: C:\Users\<USER>\.cache\huggingface\hub\<model--name>\snapshots
-    def __init__(self, model="microsoft/DialoGPT-small", settings={}):
-        
-        self.model = model
-        self.pipe = pipeline("text-generation", model=model, torch_dtype=torch.bfloat16)
-        self.settings = settings # note, dictionaries are mutable!
-        self.chat_history = []
-        
-        
-    def _send_command(self, prompt, formatResponse=True, fix=True):
-        # for details see: https://huggingface.co/google/gemma-3-1b-it?library=transformers
-        messages = [
-                    {"role": "user", "content": prompt},
-                    ]
-        
-        response = self.pipe(self.chat_history + messages, # send whole chat history, not just most recent message
-                             max_new_tokens=self.settings['max_new_tokens'],
-                             )
-        
-        if formatResponse:
-            response = response[0]['generated_text'][-1]
-            self.chat_history += messages # append to end of history
-            self.chat_history.append(response)
-            self.manage_chat_history()
-            response = response['role'].capitalize() + ": " + response['content'] +'\n'
+try:
+    from transformers import pipeline
+    # Using `low_cpu_mem_usage=True` or a `device_map` requires Accelerate: `pip install accelerate`
+    import accelerate
+    import torch
+    class TransformersLLM:
+        # Note that the default location for the model cache is: C:\Users\<USER>\.cache\huggingface\hub\<model--name>\snapshots
+        def __init__(self, model="microsoft/DialoGPT-small", settings={}):
             
-        return response
-
-
-    def manage_chat_history(self,):
-        '''
-        Clean and maintain the in memory chat history.
-        
-        Gemma3 throws a *** jinja2.exceptions.TemplateError: Conversation roles must alternate user/assistant/user/assistant/...
-        if the history STARTS with an assistant message, so I am enforcing even histories only.
-
-        Returns
-        -------
-        None.
-
-        '''
-        # Chat history should always be a positive number
-        if self.settings['prev_chat_context'] < 2:
-            self.settings['prev_chat_context'] = 2
-        # gemma3 doesn't like odd histories
-        if self.settings['prev_chat_context'] % 2 != 0:
-            self.settings['prev_chat_context'] -= 1
+            self.model = model
+            self.pipe = pipeline("text-generation", model=model, torch_dtype=torch.bfloat16)
+            self.settings = settings # note, dictionaries are mutable!
+            self.chat_history = []
             
-        # add response to chat history, user prompt is included in response          
-        while len(self.chat_history) > self.settings['prev_chat_context']:
-            # remove oldest 2 messages
-            # gemma3 has issues with odd numbers
-            self.chat_history.pop(0)
-            self.chat_history.pop(0)
-
-
-    def test_LLM_connection(self, fix, previousAttempt):
-        '''
-        Should be customized to each server type to test for and fix common errors.
-
-        Parameters
-        ----------
-        fix : BOOL
-            Should the function attempt to fix a broken connection?
-        previousAttempt : TYPE
-            The return of a previous _send_command.
-
-        Returns
-        -------
-        connectionStatus : BOOL
-            True if the connection has been re-established.
-        errorMsg : STR
-            Error message if connection cannot be re-established.
-
-        '''
-        connectionStatus = False
-        errorMsg = ""
-        try:
-            self._send_command(r"hello", formatResponse=False, fix=False)
-            connectionStatus = True
-        except:
-            raise
-        return (connectionStatus, errorMsg)
+            
+        def _send_command(self, prompt, formatResponse=True, fix=True):
+            # for details see: https://huggingface.co/google/gemma-3-1b-it?library=transformers
+            messages = [
+                        {"role": "user", "content": prompt},
+                        ]
+            
+            response = self.pipe(self.chat_history + messages, # send whole chat history, not just most recent message
+                                 max_new_tokens=self.settings['max_new_tokens'],
+                                 )
+            
+            if formatResponse:
+                response = response[0]['generated_text'][-1]
+                self.chat_history += messages # append to end of history
+                self.chat_history.append(response)
+                self.manage_chat_history()
+                response = response['role'].capitalize() + ": " + response['content'] +'\n'
+                
+            return response
     
-    def exit(self):
-        pass # should be defined for each server type
+    
+        def manage_chat_history(self,):
+            '''
+            Clean and maintain the in memory chat history.
+            
+            Gemma3 throws a *** jinja2.exceptions.TemplateError: Conversation roles must alternate user/assistant/user/assistant/...
+            if the history STARTS with an assistant message, so I am enforcing even histories only.
+    
+            Returns
+            -------
+            None.
+    
+            '''
+            # Chat history should always be a positive number
+            if self.settings['prev_chat_context'] < 2:
+                self.settings['prev_chat_context'] = 2
+            # gemma3 doesn't like odd histories
+            if self.settings['prev_chat_context'] % 2 != 0:
+                self.settings['prev_chat_context'] -= 1
+                
+            # add response to chat history, user prompt is included in response          
+            while len(self.chat_history) > self.settings['prev_chat_context']:
+                # remove oldest 2 messages
+                # gemma3 has issues with odd numbers
+                self.chat_history.pop(0)
+                self.chat_history.pop(0)
+    
+    
+        def test_LLM_connection(self, fix, previousAttempt):
+            '''
+            Should be customized to each server type to test for and fix common errors.
+    
+            Parameters
+            ----------
+            fix : BOOL
+                Should the function attempt to fix a broken connection?
+            previousAttempt : TYPE
+                The return of a previous _send_command.
+    
+            Returns
+            -------
+            connectionStatus : BOOL
+                True if the connection has been re-established.
+            errorMsg : STR
+                Error message if connection cannot be re-established.
+    
+            '''
+            connectionStatus = False
+            errorMsg = ""
+            try:
+                self._send_command(r"hello", formatResponse=False, fix=False)
+                connectionStatus = True
+            except:
+                raise
+            return (connectionStatus, errorMsg)
+        
+        def exit(self):
+            pass # should be defined for each server type
+
+except ImportError:
+    class TransformersLLM(PlaceholderLLM):
+        def _send_command(self, prompt):
+            error_message="Placeholder: I am a placeholder for a real LLM. An ImportError occured. Make sure you have transformers, accelerate, and pytorch installed or change your LLM settings."
+            print(error_message)
+            return error_message 
         
 # Register backend
 server_dict["transformers"] = TransformersLLM
