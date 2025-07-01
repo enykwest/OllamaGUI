@@ -236,15 +236,21 @@ server_dict["podman"] = OllamaPodmanLLM
 
 try:
     from transformers import pipeline
-    # Using `low_cpu_mem_usage=True` or a `device_map` requires Accelerate: `pip install accelerate`
-    import accelerate
     import torch
     class TransformersLLM:
         # Note that the default location for the model cache is: C:\Users\<USER>\.cache\huggingface\hub\<model--name>\snapshots
         def __init__(self, model="microsoft/DialoGPT-small", settings={}):
             
             self.model = model
-            self.pipe = pipeline("text-generation", model=model, torch_dtype=torch.bfloat16)
+            try: # init pipeline
+                # Using `low_cpu_mem_usage=True` or a `device_map` requires Accelerate: `pip install accelerate`
+                # device_map='auto' allows large models to be split between GPU and CPU memory as well as the hard disc
+                import accelerate
+                self.pipe = pipeline("text-generation", model=model, device_map='auto', torch_dtype=torch.bfloat16) # bfloat16 as a comprimise for size vs accuracy
+            except ModuleNotFoundError:
+                warn("accelerate module not found so only one device (CPU/GPU) will be utilized. System may crash if you try loading a model larger than your memory.")
+                self.pipe = pipeline("text-generation", model=model, torch_dtype=torch.bfloat16)
+
             self.settings = settings # note, dictionaries are mutable!
             self.chat_history = []
             
@@ -317,11 +323,13 @@ try:
             '''
             connectionStatus = False
             errorMsg = ""
+            # TODO implement fix/don't fix paths
             try:
                 self._send_command(r"hello", formatResponse=False, fix=False)
                 connectionStatus = True
-            except:
-                raise
+            except Exception as e:
+                print(e)
+                errorMsg = e # don't try to fix the problem, just report it
             return (connectionStatus, errorMsg)
         
         def exit(self):

@@ -1,9 +1,12 @@
 '''
-Bugs / ToDo
+Bugs / ToDo: make it work, make it right, make it fast
 - Currently, changing settings doesn't change the currently loaded model, you need to create a new window or restart.
-- Need to add the ability to pass additional context (past prompts and responses)
 - use accelerate to split large models between gpu and cpu
+    - debuging now
+    - microsoft/DialoGPT-small seems to work, but google/gemma-3-1b-it only runs on CPU currently as the GPU version requires trition
+        and triton is only availible on linux. This is an odd bug where the backend "loads properly" but fails during runtime.
 - build settings window from backend?
+- probably need to implement "nograd" or "eval" somewhere
 '''
 from gui.chat_window import ChatWindow as baseGUI
 import tkinter as tk
