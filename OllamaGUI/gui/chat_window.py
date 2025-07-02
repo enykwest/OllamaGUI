@@ -29,6 +29,7 @@ class ChatWindow(tk.Tk):
         # Set Menu bar options
         self.menu_bar_options = {
             "File": {
+                "Start Server": self.do_nothing,
                 "New": self.new_window,
                 "Open": self.open_file,
                 "Save": self.save_file,
@@ -203,6 +204,18 @@ class ChatWindow(tk.Tk):
 
     # Add the create_menu method
     def create_menu(self):
+        """
+        Create a new menu object from self.menu_bar_options and update the window.
+
+        To edit the menu functionality,
+        FIRST edit self.menu_bar_options
+        (either manually or with the helper functions add_menu_item and remove_menu_item)
+        THEN call this function to re-initialize the menus.
+
+        e.g.
+        self.menu_bar_options['File']['Start Server'] = self.start_server # edit menu dictionary
+        self.create_menu() # re-initilize menu bar
+        """
         self.menu_bar = tk.Menu(self)
         for top_menu, submenu_dict in self.menu_bar_options.items():
             menu = tk.Menu(self.menu_bar, tearoff=0)
@@ -226,8 +239,10 @@ class ChatWindow(tk.Tk):
     def add_menu_item(self, action, *fullpath):
         """
         Add a menu item at the specified nested path.
-        Usage: add_menu_item(action, 'Menu', 'Submenu', ... , 'Item')
-        The last element in fullpath is the item's label.
+        Usage: add_menu_item(action, 'Menu', 'Submenu', ... , 'List Item Label')
+        The action is the python function you want to execute when the list item is selected.
+        
+        e.g. add_menu_item( self.do_nothing, "File", "Settings", "Do Nothing")
         """
         if not fullpath:
             raise ValueError("You must provide at least one menu label.")

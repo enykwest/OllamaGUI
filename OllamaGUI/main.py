@@ -1,6 +1,7 @@
 '''
 Bugs / ToDo: make it work, make it right, make it fast
 - Currently, changing settings doesn't change the currently loaded model, you need to create a new window or restart.
+    - Work around: Server is no longer started when window starts. Added "Start Server" command to File menu.
 - use accelerate to split large models between gpu and cpu
     - debuging now
     - microsoft/DialoGPT-small seems to work, but google/gemma-3-1b-it only runs on CPU currently as the GPU version requires trition
@@ -17,11 +18,17 @@ from utils.llm_backend import PlaceholderLLM
 class OllamaGui(baseGUI):
     def __init__(self):
         super().__init__()
+
+        # edit menu bar
+        self.menu_bar_options['File']['Start Server'] = self.start_server
+        self.create_menu() # re-initilize menu bar
+
+    def start_server(self,fix=True):
         try:
             self.llm_backend = get_llm_backend(self.settings)
             self.protocol("WM_DELETE_WINDOW", self.exit)
     
-            connectionStatus, errorMsg = self.llm_backend.test_LLM_connection(fix=True, previousAttempt=None)
+            connectionStatus, errorMsg = self.llm_backend.test_LLM_connection(fix=fix, previousAttempt=None)
             if connectionStatus:
                 self.push_to_chat_window(r'Hello World!')
             else:
