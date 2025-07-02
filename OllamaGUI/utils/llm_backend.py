@@ -288,8 +288,8 @@ try:
     
             '''
             # Chat history should always be a positive number
-            if self.settings['prev_chat_context'] < 2:
-                self.settings['prev_chat_context'] = 2
+            if self.settings['prev_chat_context'] < 0:
+                self.settings['prev_chat_context'] = 0
             # gemma3 doesn't like odd histories
             if self.settings['prev_chat_context'] % 2 != 0:
                 self.settings['prev_chat_context'] -= 1

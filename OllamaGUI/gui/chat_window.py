@@ -52,7 +52,7 @@ class ChatWindow(tk.Tk):
             "model": "microsoft/DialoGPT-small",
             "server_type": "placeholder",
             "max_new_tokens": 10,
-            "prev_chat_context": 1,
+            "prev_chat_context": 2,
         }
         try:
             self.load_settings(self.STARTUP_SETTINGS_FILE)
