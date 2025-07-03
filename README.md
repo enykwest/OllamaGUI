@@ -8,7 +8,7 @@ Ollama development is currently on hold in favor of improving the Transformers p
 If you want to use the Transformers Pipeline option you will need the following python modules:
 - pytorch
 - transformers
-- yaml
+- pyyaml
 
 It is also recommended you install "accelerate" so large models can be split between GPU and CPU memory. In addition to letting you use larger models, it will also help prevent system crashes if you accidently load a model that is too large. All of these modules can be found on pip or conda-forge, but you may if you want to use conda and your GPU you may need to check the pytorch and nvidia channels. Also, Conda seems to default to the cpu only version, so specify a build number appropriate for your GPU with "cuda" in it.
 
@@ -42,3 +42,32 @@ The best way to improve the answers to your prompts is to use a better model. Ho
 1. When using the **Transformers Pipeline**, every time you open a new window and click `Start Server` you are starting a NEW server, which consumes memory on your machine. Accordingly, close your previous chat window before starting the new server. This shouldn't be an issue for Ollama type servers.
 2. When using the **Transformers Pipeline**, `prev_chat_context` sets the length of the chat history maintained by the LLM. When set to zero this means the LLM has no idea what the last message or response was. Increasing this value gives the LLM more context, but also increases memory usage and response time.  
 3. When using the **Transformers Pipeline**, In Settings, `max_new_tokens` limits how many characters the LLM is allowed to generate. With small values you may see it's response get cut off. Increasing this number will allow it to blather on longer, but also increase memory usage and increase your wait time. If you want to keep this number low for performance reasons, try asking the LLM to "Be Concise". If you have `prev_chat_context` turned on, you can say "Your message was truncated, please continue where you left off".
+
+
+# Installation Details
+
+This is not a comprehensive guide in installing this package, but more of a set of notes to myself on different ways this package can be provided to non-technical auidiances.
+
+## Conda
+A conda environment.yml file is included in the repo.
+It was created with: `conda env export --from-history > environment.yml `
+It can be used to create a conda env with: `conda env create -f environment.yml `
+
+You may be able to build a portable app using conda-build.
+
+## pip
+A requirements.txt file was created for pip. You should be able to install them with: `pip install -r requirements.txt`
+
+You may be able to create a standalone portable app first with: `python -m pip install -r requirements.txt --target src`
+Then with: `python -m zipapp -p "interpreter" src -m "main:main"`
+
+>[!note]
+> The installations of dependencies must occur at the same level as main.py or the interpreter can't find the packages. This **will** clutter the src folder.
+
+Est. size: 1.5 Gb + model size
+
+## Sources:
+- https://chtc.cs.wisc.edu/uw-research-computing/conda-installation
+- https://stackoverflow.com/questions/62885911/pip-freeze-creates-some-weird-path-instead-of-the-package-version
+- https://docs.python.org/3/library/zipapp.html
+- https://packaging.python.org/en/latest/tutorials/packaging-projects/
