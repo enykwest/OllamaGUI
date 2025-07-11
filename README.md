@@ -1,20 +1,29 @@
 # OllamaGUI
 A TkInter based GUI for interacting with locally hosted LLMs.
-Currently, the most advanced usage of this app is to load a model from HuggingFace.co using the **Transformers Pipeline**. Preliminary development has been done to use **Ollama** (both bare metal and hosted in Podman).
 
-Ollama development is currently on hold in favor of improving the Transformers pipeline.
-Adopting the Podman code to Docker should be trivial, but I haven't done it yet.
+## Development Status
+Currently, the most advanced usage of this app is to load a model from HuggingFace.co using the **Transformers Pipeline**. Preliminary development has been done to use **Ollama** (both bare metal and hosted in Podman), but Ollama pipeline development is currently on hold in favor of improving the Transformers pipeline. Adopting the Podman code to Docker should be trivial, but I haven't done it yet.
 
 # Installation
-This is not a comprehensive guide in installing Ollama. I originally began with Ollama hosted in  Docker, then transitioned to Podman via ADHD, and finally decided that the Transformers Pipeline was the best path forward to locally hosted LLMs. This app offers interfaces to all three, but I highly recommend using the [[#Transformers Pipeline Setup (Recommended)]] below.
 
-If you decide to use Ollama anyway, this is a python app, so you will need some installation of python. I recommend using [miniconda](https://www.anaconda.com/docs/getting-started/miniconda/main).
+>[!note] Super Easy Windows Setup
+> For Windows unfamiliar with python, windows batch files (`.bat`) are provided. These will setup your python environment for you, but currently install the CPU version of the Transformers Pipeline Setup .First install python by going to your search bar and typing `cmd` and launching "Command Prompt". A black terminal should pop-up. In the terminal type `python` and hit `enter`. The Microsoft store should pop-up and prompt you to install python. After that is done run `WindowsPythonSetup.bat` by double clicking it. If that works you're done! Double click `WindowsPythonLauncher.bat` to launch the GUI and proceed to [[#App Setup]].
 
+I originally began with Ollama, then transitioned to Podman after encountering some bugs, and finally decided that the Transformers Pipeline was the best path forward to locally hosted LLMs. This app offers interfaces to all three, but I highly recommend using the [[#Transformers Pipeline Setup (Recommended)]] below.
+
+No matter what you decide, this is a python app so you will need some installation of python. If you're **not** using the easy windows setup above, then I recommend using [miniconda](https://www.anaconda.com/docs/getting-started/miniconda/main). 
+
+The only required (non-standard) package is:
+- pyyaml
+but the Transformers Pipeline has more requirements.
+
+If you're **not** using the easy windows setup above, then I recommend using [miniconda](https://www.anaconda.com/docs/getting-started/miniconda/main). Windows batch files are provided for those as well, but sometime windows can't find conda.
 ## Ollama Setup (not recommended)
 
-Install [Ollama](https://ollama.com/), get it working from the command line, then proceed to [[#App Setup]].
+1. Install Python. The only required (non-standard) package is `pyyaml`.
+2. Install [Ollama](https://ollama.com/), get it working from the command line, then proceed to [[#App Setup]].
 
-## Podman & Docker Setup (not recommended)
+## Ollama via Podman & Docker Setup (not recommended)
 
 Docker and Podman are very similar. Both deployments require you to first setup a podman/docker machine called "ollama" with ollama installed so this app can query the model using the shell command `podman exec ollama ollama run <MODEL_NAME> <PROMPT>`
 
@@ -33,53 +42,27 @@ If you want to use the Transformers Pipeline option you will need a python distr
 - transformers
 - pyyaml
 
-It is also recommended you install "**accelerate**" so large models can be split between GPU and CPU memory. In addition to letting you use larger models, it will also help prevent system crashes if you accidently load a model that is too large. All of these modules can be found on pip or conda-forge, but if you want to use conda and your GPU then you may need to check the pytorch and nvidia channels. Also, Conda seems to default to the cpu only version, so specify a build number appropriate for your GPU with "cuda" in it. After you install the appropriate packages proceed to [[#App Setup]].
+It is also recommended you install "**accelerate**" so large models can be split between GPU and CPU memory. In addition to letting you use larger models, it will also help prevent system crashes if you accidently load a model that is too large. All of these modules can be found on pip or conda-forge, but if you want to use your GPU make sure you install a cuda build (conda users may need to check the pytorch and nvidia channels for cuda builds). Conda should automatically install the proper cuda-toolkit, but pip users may need to do that separately.
 
->[!note] Easy Installation
->For windows users willing to use [miniconda/anaconda](https://www.anaconda.com/docs/getting-started/miniconda/main) and the CPU only version of pytorch, two `.bat` files are provided. First install miniconda, then run `WindowsCondaSetup.bat`. If that works you're done! The `WindowsLauncher.bat` will launch the GUI. Proceed to [[#App Setup]]
+(CPU Setup): A `environment.yml` file is provided for conda users and a `requirements.txt` for pip.
+
+After you install the appropriate packages proceed to [[#App Setup]].
 
 > [!WARNING]
 > I have had BSOD issues with PASCAL architecture GPUs. It is unclear if I have a bad GPU or if the newer version of pytorch/transformers is incompatible with them.
 
-
-### Conda (recommended)
-A conda environment.yml file is included in the repo.
-It was created with: `conda env export --from-history > environment.yml `
-It can be used to create a conda env with: `conda env create -f environment.yml `
-
-You may be able to build a portable app using conda-build.
-
-### pip
-
->[!warning]
-> I couldn't get this to work.
-
-A requirements.txt file was created for pip. You should be able to install them with: `pip install -r requirements.txt`
-
-You may be able to create a standalone portable app first with: `python -m pip install -r requirements.txt --target src`
-Then with: `python -m zipapp -p "interpreter" src -m "main:main"`
-
-Est. size: 1.5 Gb + model size
-
->[!note]
-> The installations of dependencies must occur at the same level as main.py or the interpreter can't find the packages. This **will** clutter the src folder.
-
-## Sources:
-- https://chtc.cs.wisc.edu/uw-research-computing/conda-installation
-- https://stackoverflow.com/questions/62885911/pip-freeze-creates-some-weird-path-instead-of-the-package-version
-- https://docs.python.org/3/library/zipapp.html
-- https://packaging.python.org/en/latest/tutorials/packaging-projects/
-
-
 # App Setup:
 
-Until I get around to packaging things as a module or .exe you will have to start the program manually from the command line using the command `python main.py` (Windows users with anaconda can use `WindowsLauncher.bat`). This is probably for the best because a lot of debug info is printed to the terminal.
+>[!note] Super Easy Windows Setup
+> Windows unfamiliar with python and no desire to learn should use the Super Easy Windows Setup described in the [[#Installation]] section.
 
-Once you start the app you will be met with a simple chat interface. The first thing you should do is update `Options -> Settings`. Choose an appropriate Server Type (Recommended: Transformers Pipeline) and set your LLM Model. If you're connected to the internet, the server should automatically download the model when you start it (but this may take a while). If you're offline, you *should* be able to use a filepath model instead, but I haven't tested this yet. Ignore the other settings for now.
+Until I get around to packaging things as a module or .exe you will have to start the program manually from the command line using the command `python main.py`. This is probably for the best because a lot of debug info is printed to the terminal.
+
+Once you start the app you will be met with a simple chat interface. The first thing you should do is update `Options -> Settings`. Choose an appropriate Server Type (Recommended: Transformers Pipeline) and set your LLM Model. If you're connected to the internet, the server should automatically download the model when you start it (but this may take a while). If you're offline, you *should* be able to use a file path to a downloaded model instead, but I haven't tested this yet. Ignore the other settings for now.
 
 The program defaults to using the "microsoft/DialoGPT-small" LLM model because it is small and useful for debugging purposes. I recommend trying this model first. However it is pretty useless and sometimes RUDE. I take no responsibility for what it (or any other LLM!) says to you. You can find other models at HuggingFace.co.
 
-> [!note]
+> [!warning]
 > Some of the HuggingFace models require the user to login and agree to their ToS. For full details see their website, but I have tried to include the relevant links in an informational announcement when this error is encountered.
 >
 > ALSO, there is a known bug when trying to use Google/Gemma type models on GPUs. There are currently no plans to fix this. Use your CPU or try another model.
@@ -93,7 +76,7 @@ As a reminder, don't forget that training Artificial Intelligence (AI) on public
 Happy Chatting!
 
 ## Improving Performance
-The best way to improve the answers to your prompts is to use a better model. However, there are some things you can do locally to improve your experience. **Be sure you monitor your local memory usage and CPU/GPU load as you make these changes** so you don't crash your system!
+The best way to improve the responses to your prompts is to use a better model. However, there are some things you can do locally to improve your experience. **Be sure you monitor your local memory usage and CPU/GPU load as you make these changes** so you don't crash your system!
 
 1. When using the **Transformers Pipeline**, every time you open a new window and click `Start Server` you are starting a NEW server, which consumes memory on your machine. Accordingly, close your previous chat window before starting the new server. This shouldn't be an issue for Ollama type servers unless you are querying different models.
 2. When using the **Transformers Pipeline**, `prev_chat_context` sets the length of the chat history maintained by the LLM. When set to zero this means the LLM has no idea what the last message or response was. Increasing this value gives the LLM more context, but also increases memory usage and response time.  

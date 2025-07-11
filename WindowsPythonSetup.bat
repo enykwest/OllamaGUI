@@ -1,0 +1,18 @@
+@echo off
+setlocal
+
+echo Creating virtual environment...
+call python -m venv venv
+
+echo Activating virtual environment...
+call venv\Scripts\activate.bat
+
+echo Installing requirements...
+call pip install -r requirements.txt
+
+echo Deactivating virtual environment...
+call deactivate
+
+echo Setup complete.
+pause
+endlocal

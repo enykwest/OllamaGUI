@@ -1,4 +1,4 @@
-max_new_tokens: 10
+max_new_tokens: 50
 model: microsoft/DialoGPT-small
 prev_chat_context: 6
 server_type: transformers
