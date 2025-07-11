@@ -1,10 +1,16 @@
 '''
 Bugs / ToDo: make it work, make it right, make it fast
-- Currently, changing settings doesn't change the currently loaded model, you need to create a new window or restart.
+- Implement ability to send prompts using "Enter" and a setting to enable/disable this.
+- Add "About" dropdown the shows README file or opens README in a browser.
+- Changing settings doesn't change the currently loaded model, you need to create a new window or restart.
     - Work around: Server is no longer started when window starts. Added "Start Server" command to File menu.
+    - #bug/low_priority/mem_leak if two GUIs are open, closing one doesn't unload the model from GPU when using transformers pipeline, memory is cleared when all windows are closed.
+        - This issues was exacerbated by Spyder. The window started by Spyder doesn't unload memory until Spyder is closed, but new windows DO clear their memory when closed.
+        - Starting a server twice from the same window doubles memory usage, but doesn't release previous allocation until closed.
+        - Simple work around, close previous window before starting new server. If you accidently double start a server, close the window.
 - use accelerate to split large models between gpu and cpu
-    - debuging now
-    - microsoft/DialoGPT-small seems to work, but google/gemma-3-1b-it only runs on CPU currently as the GPU version requires trition
+    - validated using Phi-4-Mini-Instruct and Llama-3.2-3B-Instruct on limited memory device.
+    - #bug/low_priority/incompatible_model microsoft/DialoGPT-small seems to work, but google/gemma-3-1b-it only runs on CPU currently as the GPU version requires trition
         and triton is only availible on linux. This is an odd bug where the backend "loads properly" but fails during runtime.
 - build settings window from backend?
 - probably need to implement "nograd" or "eval" somewhere
