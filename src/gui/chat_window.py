@@ -7,6 +7,7 @@ import yaml
 # one possible solution for new windows
 import subprocess
 import sys
+import webbrowser # to link to github
 
 #%% Define Classes
 class ChatWindow(tk.Tk):
@@ -39,6 +40,10 @@ class ChatWindow(tk.Tk):
             },
             "Options": {
                 "Settings": self.open_settings_window,
+            },
+            "About LLM GUI": {
+                "README Popup": self.show_readme_popup,
+                "Github Website": self.open_readme_in_browser,
             },
         }
 
@@ -282,14 +287,7 @@ class ChatWindow(tk.Tk):
             self.chat_history.insert(tk.END, f"You: {user_message}\n\n")
             self.user_prompt.delete("1.0", tk.END)  # Clear the input field
     
-    # old
-    @classmethod
-    def new_window(cls):
-        """Create a new chat window"""
-        #new_chat = ChatWindow()
-        new_chat = cls() #.__init__()
-        new_chat.mainloop()
-    # new
+    
     def new_window(self):
         subprocess.Popen([sys.executable, sys.argv[0]])
     
@@ -349,6 +347,32 @@ class ChatWindow(tk.Tk):
             except Exception as e:
                 messagebox.showerror("Error", f"Could not save file: {str(e)}")
 
+
+    @staticmethod
+    def show_readme_popup():
+        # Attempt to read README.md from the repo root
+        #readme_path = os.path.join(os.path.dirname(__file__), '..', 'README.md')
+        readme_path = os.path.join(os.path.dirname(__file__), '..','..', 'README.md')
+        try:
+            with open(readme_path, 'r', encoding='utf-8') as f:
+                readme_content = f.read()
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not open {readme_path}:\n{e}")
+            return
+    
+        popup = tk.Toplevel()
+        popup.title("About - README")
+        text_area = scrolledtext.ScrolledText(popup, wrap=tk.WORD, width=80, height=30)
+        text_area.pack(expand=True, fill='both')
+        text_area.insert(tk.END, readme_content)
+        text_area.config(state='disabled')
+        
+    @staticmethod 
+    def open_readme_in_browser():
+        # Replace with the actual URL to your README on GitHub
+        github_readme_url = "https://github.com/enykwest/OllamaGUI"
+        webbrowser.open(github_readme_url)
+        
 
 #%% Start Program for standalone testing
 if __name__ == "__main__":
