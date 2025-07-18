@@ -1,7 +1,5 @@
 '''
 Bugs / ToDo: make it work, make it right, make it fast
-- Implement ability to send prompts using "Enter" and a setting to enable/disable this.
-- Add "About" dropdown the shows README file or opens README in a browser.
 - Changing settings doesn't change the currently loaded model, you need to create a new window or restart.
     - Work around: Server is no longer started when window starts. Added "Start Server" command to File menu.
     - #bug/low_priority/mem_leak if two GUIs are open, closing one doesn't unload the model from GPU when using transformers pipeline, memory is cleared when all windows are closed.

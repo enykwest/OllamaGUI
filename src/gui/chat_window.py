@@ -25,7 +25,6 @@ class ChatWindow(tk.Tk):
         
         # Create the main content area
         self.geometry("400x300")
-        self.create_widgets()
 
         # Set Menu bar options
         self.menu_bar_options = {
@@ -58,19 +57,22 @@ class ChatWindow(tk.Tk):
             "server_type": "placeholder",
             "max_new_tokens": 10,
             "prev_chat_context": 2,
+            "send_on_enter": False,  # add this line
         }
         try:
             self.load_settings(self.STARTUP_SETTINGS_FILE)
         except Exception as e:
             print(f"Exception {e} encountered opening startup settings file {self.STARTUP_SETTINGS_FILE}. Using default settings.")
             # use default settings instead
-
+            
+        self.create_widgets()
 
 
     # Placeholder function for new features
     @staticmethod
     def do_nothing():
         print("Placeholder Function Activated")
+
         
     @property
     def STARTUP_SETTINGS_FILE(self):
@@ -128,7 +130,6 @@ class ChatWindow(tk.Tk):
         prev_chat_context_var = tk.IntVar(value=self.settings.get("prev_chat_context", 1))
         prev_chat_context_entry = ttk.Entry(tokens_frame, textvariable=prev_chat_context_var, width=10)
         prev_chat_context_entry.grid(row=1, column=1, padx=5, pady=5)
-
 
         # LLM Model
         model_frame = ttk.Frame(settings_win)
@@ -192,19 +193,51 @@ class ChatWindow(tk.Tk):
 
 
     def create_widgets(self):
-        # 1. Create a label widget for the chat window
+        # 1. Chat history (top)
         self.chat_history = scrolledtext.ScrolledText(self, wrap="word", width=40, height=10)
         self.chat_history.pack(side="top", fill='both', expand=True, padx=5, pady=5)
+    
+        # 2a. Bottom frame for input and controls
+        bottom_frame = tk.Frame(self)
+        bottom_frame.pack(side="top", fill="x", padx=5, pady=5)
+    
+        # 2b. Right frame for controls (right side, vertical stack)
+        right_controls = tk.Frame(bottom_frame)
+        right_controls.pack(side="right", fill="y", padx=(0, 5), pady=5)
         
-        # 2. Create a button to send the message
-        self.send_button = tk.Button(self, text="Send")
-        self.send_button.pack(side='right', padx=5, pady=5)
-        # Add the command to the button
-        self.send_button["command"] = self.send_prompt
+        # 3. User input (left side)
+        self.user_prompt = tk.Text(bottom_frame, height=5)
+        self.user_prompt.pack(side="left", fill="x", expand=True, padx=5, pady=5)
+    
+        # 4a. Checkbox for Send on Enter
         
-        # 3. Create an entry widget for the user to input their message
-        self.user_prompt = tk.Text(self, height=5)
-        self.user_prompt.pack(side='left', fill='x', expand=True, padx=5, pady=5)
+        # tk variable for event listening
+        self.send_on_enter_var = tk.BooleanVar(value=self.settings.get("send_on_enter", False))
+        self.send_on_enter_checkbox = tk.Checkbutton(
+            right_controls,
+            text="Send on Enter",
+            variable=self.send_on_enter_var,
+            command=self._toggle_send_on_enter  # Implement this method!
+        )
+        self.send_on_enter_checkbox.pack(side="bottom", fill="x", pady=(0, 5))
+    
+        # 4b. Send button
+        self.send_button = tk.Button(right_controls, text="Send", command=self.send_prompt)
+        self.send_button.pack(side="bottom", fill="x", pady=(0, 5))
+    
+        
+    def _toggle_send_on_enter(self):
+        """Bind or unbind the <Return> event for sending message based on checkbox"""
+        send_on_enter = self.send_on_enter_var.get()
+        self.settings["send_on_enter"] = send_on_enter
+        if send_on_enter:
+            self.user_prompt.bind('<Return>', self._send_on_enter) 
+        else:
+            self.user_prompt.unbind('<Return>')
+            
+    def _send_on_enter(self, event):
+        self.send_prompt()
+        return "break"  # Prevent newline in Text widget
 
 
     # Add the create_menu method
@@ -290,6 +323,7 @@ class ChatWindow(tk.Tk):
     
     def new_window(self):
         subprocess.Popen([sys.executable, sys.argv[0]])
+
     
     def open_file(self):
         """Open a file and load its contents into chat_history"""
@@ -315,6 +349,7 @@ class ChatWindow(tk.Tk):
                     self.chat_history.insert(tk.END, file_content)
             except Exception as e:
                 messagebox.showerror("Error", f"Could not open file: {str(e)}")
+
     
     def save_file(self):
         """Save chat history to the current filename"""
@@ -327,6 +362,7 @@ class ChatWindow(tk.Tk):
                     file.write(self.chat_history.get("1.0", tk.END))
             except Exception as e:
                 messagebox.showerror("Error", f"Could not save file: {str(e)}")
+
     
     def save_as(self):
         """Prompt user for filename and save chat history"""
@@ -366,6 +402,7 @@ class ChatWindow(tk.Tk):
         text_area.pack(expand=True, fill='both')
         text_area.insert(tk.END, readme_content)
         text_area.config(state='disabled')
+
         
     @staticmethod 
     def open_readme_in_browser():
