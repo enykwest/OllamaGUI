@@ -178,8 +178,11 @@ class ChatWindow(tk.Tk):
             self.settings["model"] = model_var.get()
             self.settings["max_new_tokens"] = max_new_tokens_var.get()
             self.settings["prev_chat_context"] = prev_chat_context_var.get()
-            self.save_settings(self.STARTUP_SETTINGS_FILE)
-            messagebox.showinfo("Settings Saved", "Settings have been saved.")
+            try:
+                self.save_settings(self.STARTUP_SETTINGS_FILE)
+                messagebox.showinfo("Settings Saved", "Settings have been saved.")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save: {e}")
             settings_win.destroy()
         
         # Create Buttons

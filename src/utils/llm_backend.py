@@ -258,7 +258,7 @@ try:
         def _send_command(self, prompt, formatResponse=True, fix=True):
             # for details see: https://huggingface.co/google/gemma-3-1b-it?library=transformers
             messages = [
-                        {"role": "user", "content": prompt},
+                        {"role": "user", "content": prompt,},
                         ]
             
             response = self.pipe(self.chat_history + messages, # send whole chat history, not just most recent message
@@ -270,7 +270,7 @@ try:
                 self.chat_history += messages # append to end of history
                 self.chat_history.append(response)
                 self.manage_chat_history()
-                response = response['role'].capitalize() + ": " + response['content'] +'\n'
+                response = response['role'].capitalize() + ":\n" + response['content'] +'\n'
                 
             return response
     
@@ -279,7 +279,7 @@ try:
             '''
             Clean and maintain the in memory chat history.
             
-            Gemma3 throws a *** jinja2.exceptions.TemplateError: Conversation roles must alternate user/assistant/user/assistant/...
+            Gemma3 throws a "*** jinja2.exceptions.TemplateError: Conversation roles must alternate user/assistant/user/assistant/..."
             if the history STARTS with an assistant message, so I am enforcing even histories only.
     
             Returns

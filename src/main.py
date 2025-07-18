@@ -1,5 +1,12 @@
 '''
-Bugs / ToDo: make it work, make it right, make it fast
+ToDo: make it work, make it right, make it fast
+- Implement "System" Prompts in settings.
+- Implement attaching files or RAG folders.
+- build settings window from backend?
+    - Add torch_dtype to settings menu for transformers pipeline
+- Allow quantized models with bitsandbytes.
+
+Bugs:
 - Changing settings doesn't change the currently loaded model, you need to create a new window or restart.
     - Work around: Server is no longer started when window starts. Added "Start Server" command to File menu.
     - #bug/low_priority/mem_leak if two GUIs are open, closing one doesn't unload the model from GPU when using transformers pipeline, memory is cleared when all windows are closed.
@@ -10,8 +17,11 @@ Bugs / ToDo: make it work, make it right, make it fast
     - validated using Phi-4-Mini-Instruct and Llama-3.2-3B-Instruct on limited memory device.
     - #bug/low_priority/incompatible_model microsoft/DialoGPT-small seems to work, but google/gemma-3-1b-it only runs on CPU currently as the GPU version requires trition
         and triton is only availible on linux. This is an odd bug where the backend "loads properly" but fails during runtime.
-- build settings window from backend?
-- probably need to implement "nograd" or "eval" somewhere
+- #bug/low_priority/incompatible_model , Gemma3 throws a *** jinja2.exceptions.TemplateError if the history STARTS with an assistant message
+    (Conversation roles must alternate user/assistant/user/assistant/...) , hotfix applied in llm_backend.manage_chat_history,
+    but I am not sure how this will interact with RAG.
+    My assumption is we have to reveal the tools in the system prompt with some one shot examples, then answer the assistant as the "user".
+    
 '''
 from gui.chat_window import ChatWindow as baseGUI
 import tkinter as tk
