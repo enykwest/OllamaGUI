@@ -8,6 +8,7 @@ import yaml
 import subprocess
 import sys
 import webbrowser # to link to github
+from datetime import date
 
 #%% Define Classes
 class ChatWindow(tk.Tk):
@@ -58,7 +59,16 @@ class ChatWindow(tk.Tk):
             "max_new_tokens": 10,
             "prev_chat_context": 2,
             "send_on_enter": False,  # add this line
+            "sys_prompt" : "",
         }
+        today = date.today()
+        if (today.month == 9) & (today.day == 19):
+        #if (today.month == 8) & (today.day == 19): # debug
+            self.settings["sys_prompt"] = "Yarrr! Today be September 19th, International Talk Like a Pirate Day ya landluber! Ye be a help assistant pirate. Answer all questions accurately, but use pirate-y speak like: ahoy! ay matey! nay! avast! and bilge water!"
+        else:
+            self.settings["sys_prompt"] = ""
+        del today
+            
         try:
             self.load_settings(self.STARTUP_SETTINGS_FILE)
         except Exception as e:
@@ -130,6 +140,42 @@ class ChatWindow(tk.Tk):
         prev_chat_context_var = tk.IntVar(value=self.settings.get("prev_chat_context", 1))
         prev_chat_context_entry = ttk.Entry(tokens_frame, textvariable=prev_chat_context_var, width=10)
         prev_chat_context_entry.grid(row=1, column=1, padx=5, pady=5)
+        
+        # set_system_prompt
+        def set_sys_prompt():
+            sys_prompt_win = tk.Toplevel(self)
+            sys_prompt_win.title("System Prompt")
+            sys_prompt_win.grab_set()
+            
+            # Instructional text box, 1x2
+            instr_label = tk.Label(sys_prompt_win, text="Enter the system prompt below:")
+            instr_label.grid(row=0, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+        
+            # Scrolled text box, 1x2
+            from tkinter.scrolledtext import ScrolledText
+            sys_prompt_text = ScrolledText(sys_prompt_win, width=60, height=12)
+            sys_prompt_text.grid(row=1, column=0, columnspan=2, padx=5, pady=(0,5))
+            
+            # load text from self.sys_prompt into scrolled text box
+            sys_prompt_text.insert("1.0", self.settings['sys_prompt'])
+        
+            # Handler for save button
+            def save_sys_prompt():
+                self.settings['sys_prompt'] = sys_prompt_text.get("1.0", "end-1c")  # strip trailing newline
+                sys_prompt_win.destroy()
+        
+            # Handler for cancel button
+            def cancel_sys_prompt():
+                sys_prompt_win.destroy()
+        
+            # Save and Cancel Buttons
+            save_btn = tk.Button(sys_prompt_win, text="Save", command=save_sys_prompt)
+            save_btn.grid(row=2, column=0, pady=8, sticky="e", padx=(0, 5))
+            cancel_btn = tk.Button(sys_prompt_win, text="Cancel", command=cancel_sys_prompt)
+            cancel_btn.grid(row=2, column=1, pady=8, sticky="w", padx=(5, 0))
+
+        ttk.Button(tokens_frame, text="Set System Prompt", command=set_sys_prompt).grid(row=2, column=0, columnspan = 2, sticky="ew", padx=5, pady=5)
+
 
         # LLM Model
         model_frame = ttk.Frame(settings_win)
@@ -184,6 +230,7 @@ class ChatWindow(tk.Tk):
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to save: {e}")
             settings_win.destroy()
+            
         
         # Create Buttons
         button_frame = ttk.Frame(settings_win)
@@ -212,9 +259,8 @@ class ChatWindow(tk.Tk):
         self.user_prompt = tk.Text(bottom_frame, height=5)
         self.user_prompt.pack(side="left", fill="x", expand=True, padx=5, pady=5)
     
-        # 4a. Checkbox for Send on Enter
-        
-        # tk variable for event listening
+        # 4. Checkbox for Send on Enter
+        # 4a. tk variable for event listening
         self.send_on_enter_var = tk.BooleanVar(value=self.settings.get("send_on_enter", False))
         self.send_on_enter_checkbox = tk.Checkbutton(
             right_controls,
