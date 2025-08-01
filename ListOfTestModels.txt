@@ -1,0 +1,19 @@
+# Small models for testing / edge compute
+
+microsoft/DialoGPT-small # super light and fast, but nonsensical
+
+# these models don't perform as well as I would like, but might be good base models
+TinyLlama/TinyLlama-1.1B-Chat-v1.0 # Doesn't understand "hello" but seems to know python
+TinyLlama/TinyLlama_v1.1
+TinyLlama/TinyLlama_v1.1_math_code
+
+
+nvidia/OpenReasoning-Nemotron-1.5B # A thinking model! returns <think> blocks
+# seems delusional... always describes a math problem unrelated to the prompt.
+# somehow breaks my chat window, probably isn't communicating how I think it should...
+# I think I fixed the chat history problem, butI need to test it again
+
+Qwen/Qwen3-0.6B
+
+google/gemma-3-1b-it  # Only works on CPUs due to missing dependancies, friendly and loquacious 
+
