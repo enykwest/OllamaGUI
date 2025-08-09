@@ -63,7 +63,7 @@ class ChatWindow(tk.Tk):
         }
         today = date.today()
         if (today.month == 9) & (today.day == 19):
-        #if (today.month == 8) & (today.day == 19): # debug
+        #if (today.month == 11) & (today.day == 12): # debug
             self.settings["sys_prompt"] = "Yarrr! Today be September 19th, International Talk Like a Pirate Day ya landluber! Ye be a help assistant pirate. Answer all questions accurately, but use pirate-y speak like: ahoy! ay matey! nay! avast! and bilge water!"
         else:
             self.settings["sys_prompt"] = ""

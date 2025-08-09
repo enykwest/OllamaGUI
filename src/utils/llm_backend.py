@@ -256,12 +256,18 @@ try:
             
             
         def _send_command(self, prompt, formatResponse=True, fix=True):
-            # for details see: https://huggingface.co/google/gemma-3-1b-it?library=transformers
+            # for details see:
+            #  - https://huggingface.co/docs/transformers/en/chat_templating
+            #  - https://huggingface.co/google/gemma-3-1b-it?library=transformers
             messages = [
                         {"role": "user", "content": prompt,},
                         ]
             
-            response = self.pipe(self.chat_history + messages, # send whole chat history, not just most recent message
+            system_prompt = [
+                        {"role": "system", "content": self.settings["sys_prompt"],},
+                        ]
+            
+            response = self.pipe(system_prompt + self.chat_history + messages, # send whole chat history, not just most recent message
                                  max_new_tokens=self.settings['max_new_tokens'],
                                  )
             
