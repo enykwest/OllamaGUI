@@ -6,7 +6,8 @@ Currently, the most advanced usage of this app is to load a model from HuggingFa
 
 # Installation
 
->[!note] Super Easy Windows Setup
+> [!note]
+> **Super Easy Windows Setup**
 > For Windows unfamiliar with python, windows batch files (`.bat`) are provided. These will setup your python environment for you, but currently install the CPU version of the Transformers Pipeline Setup .First install python by going to your search bar and typing `cmd` and launching "Command Prompt". A black terminal should pop-up. In the terminal type `python` and hit `enter`. The Microsoft store should pop-up and prompt you to install python. After that is done run `WindowsPythonSetup.bat` by double clicking it. If that works you're done! Double click `WindowsPythonLauncher.bat` to launch the GUI and proceed to [[#App Setup]].
 
 I originally began with Ollama, then transitioned to Podman after encountering some bugs, and finally decided that the Transformers Pipeline was the best path forward to locally hosted LLMs. This app offers interfaces to all three, but I highly recommend using the [[#Transformers Pipeline Setup (Recommended)]] below.
@@ -53,7 +54,8 @@ After you install the appropriate packages proceed to [[#App Setup]].
 
 # App Setup:
 
->[!note] Super Easy Windows Setup
+> [!note]
+> **Super Easy Windows Setup**
 > Windows unfamiliar with python and no desire to learn should use the Super Easy Windows Setup described in the [[#Installation]] section.
 
 Until I get around to packaging things as a module or .exe you will have to start the program manually from the command line using the command `python main.py`. This is probably for the best because a lot of debug info is printed to the terminal.
