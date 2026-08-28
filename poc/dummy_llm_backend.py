@@ -1,22 +1,50 @@
 """
 Dummy LLM Backend for CrewAI Proof of Concept
 
-Simulates an LLM by yielding hardcoded responses for different agent roles.
-Used to test CrewAI crew creation and task execution without a real LLM host.
+Simulates an LLM with hardcoded responses for different agent roles.
+Implements LangChain's LLM interface for CrewAI compatibility.
 """
 
-import time
-from typing import Generator
+from langchain.llms.base import LLM
+from langchain_core.callbacks.manager import CallbackManagerForLLMRun
+from typing import Optional, List, Any
 
 
-class DummyLLM:
+class DummyLLM(LLM):
     """
     Simulates an LLM with hardcoded responses for different agent roles.
+    Implements LangChain's LLM interface for CrewAI compatibility.
     """
 
-    def __init__(self):
-        """Initialize the dummy LLM."""
-        self.responses = {
+    @property
+    def _llm_type(self) -> str:
+        """Return type of LLM."""
+        return "dummy"
+
+    def _call(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> str:
+        """
+        Run the LLM on the given prompt.
+        Returns a hardcoded response based on agent role.
+
+        Args:
+            prompt: The input prompt
+            stop: Stop words (ignored)
+            run_manager: Callback manager (ignored)
+            **kwargs: Additional kwargs
+
+        Returns:
+            Hardcoded response string
+        """
+        # Extract agent role from kwargs, default to "researcher"
+        agent_role = kwargs.get("agent_role", "researcher")
+
+        responses = {
             "researcher": "I found that this topic has three main areas: theory, practice, and future direction. "
                          "Research indicates strong potential in all three areas.",
             "writer": "I've crafted a clear, well-structured article covering the research findings. "
@@ -25,19 +53,4 @@ class DummyLLM:
                        "Ready for publication with minor polish.",
         }
 
-    def call(self, agent_role: str = "default") -> Generator[str, None, None]:
-        """
-        Yield tokens for the given agent role, simulating streaming LLM output.
-
-        Args:
-            agent_role: The role of the agent calling the LLM
-
-        Yields:
-            Individual tokens to simulate streaming
-        """
-        response = self.responses.get(agent_role, self.responses["researcher"])
-        
-        # Yield tokens with slight delay to simulate streaming
-        for token in response.split():
-            yield token + " "
-            time.sleep(0.03)
+        return responses.get(agent_role, responses["researcher"])

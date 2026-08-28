@@ -3,17 +3,17 @@ CrewAI Proof of Concept
 
 Demonstrates a simple multi-agent workflow using CrewAI:
 - Researcher agent gathers information
-- Writer agent creates content
+- Writer agent creates content based on research
 - Reviewer agent validates quality
 
 Uses a dummy LLM backend (hardcoded responses) to avoid external dependencies.
 
 Usage:
-    python poc/crew_poc.py
+    python -m poc.crew_poc
 """
 
 from crewai import Agent, Task, Crew
-from dummy_llm_backend import DummyLLM
+from poc.dummy_llm_backend import DummyLLM
 
 
 class CrewPOC:
@@ -56,7 +56,7 @@ class CrewPOC:
 
     def create_tasks(self) -> None:
         """
-        Create tasks for each agent.
+        Create tasks for each agent with proper dependencies.
         """
         self.tasks["research"] = Task(
             description="Research the topic 'Future of AI' and compile findings.",
@@ -68,12 +68,14 @@ class CrewPOC:
             description="Write an article based on the research findings.",
             expected_output="A well-written article with clear structure.",
             agent=self.agents["writer"],
+            context=[self.tasks["research"]],
         )
 
         self.tasks["review"] = Task(
             description="Review the article for quality and clarity.",
             expected_output="Feedback and quality assessment.",
             agent=self.agents["reviewer"],
+            context=[self.tasks["write"]],
         )
 
     def create_crew(self) -> None:
@@ -95,7 +97,7 @@ class CrewPOC:
         """
         if self.crew is None:
             raise RuntimeError("Crew not initialized. Call create_agents(), create_tasks(), and create_crew() first.")
-        
+
         return self.crew.kickoff()
 
     def run(self) -> None:
