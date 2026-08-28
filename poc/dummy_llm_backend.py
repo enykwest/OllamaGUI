@@ -1,33 +1,29 @@
-from typing import Optional, List, Dict
-from langchain_core.language_models.llms import LLM
+from typing import Optional, List, Dict, Any
+from crewai.llm import LLM
 
 class DummyLLM(LLM):
-    """A minimal mock LLM for testing CrewAI flows without API calls."""
+    """A lightweight mock LLM for testing CrewAI without external API calls or LangChain."""
     
-    # Map keywords/roles to hardcoded output strings
+    model: str = "dummy-model"
     responses: Dict[str, str] = {
         "researcher": "Mock Research: Found key trends in AI, automation, and remote work.",
         "writer": "Mock Article: AI is transforming modern workflows efficiently.",
-        "editor": "Mock Edit: Approved. The article looks polished and clear.",
+        "reviewer": "Mock Edit: Approved. The article looks polished and clear.",
         "default": "Mock Response: Task completed successfully."
     }
 
-    @property
-    def _llm_type(self) -> str:
-        return "dummy_llm"
-
-    def _call(
+    def call(
         self,
-        prompt: str,
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[object] = None,
-        **kwargs
+        messages: List[Dict[str, str]],
+        callbacks: Optional[List[Any]] = None,
+        **kwargs: Any
     ) -> str:
-        prompt_lower = prompt.lower()
+        """CrewAI calls `call()` with a list of message dictionaries."""
+        # Convert full context to lowercase string to match keywords
+        full_text = " ".join([m.get("content", "") for m in messages]).lower()
         
-        # Match prompt text to hardcoded role responses
         for key, response in self.responses.items():
-            if key in prompt_lower:
+            if key in full_text:
                 return response
                 
         return self.responses["default"]
