@@ -49,13 +49,13 @@ Run `python -m this` to display the full Zen of Python.
 ### Making Changes
 
 #### Adding a Feature
-1. Create a feature branch off `dev` (e.g., `dev/crew-integration`, `dev/persistent-history`).
+1. Create a feature branch off `dev` (e.g., `feature/crew-integration`, `feature/persistent-history`).
 2. Keep changes within a single module if possible. If multiple modules must change, coordinate the changes carefully and document the coupling in comments.
 3. Write clear docstrings for new functions and classes.
 4. Test your changes manually (and write unit tests if the change is complex).
 
 #### Fixing a Bug
-1. Create a bugfix branch off `dev` (e.g., `dev/settings-not-loading`, `dev/chat-history-display`).
+1. Create a bugfix branch off `dev` (e.g., `bugfix/settings-not-loading`, `bugfix/chat-history-display`).
 2. Fix the bug in the module where it originated, not by patching another module.
 3. Add a comment explaining why the bug occurred and how it's fixed.
 4. Test the fix thoroughly.
@@ -94,9 +94,10 @@ Files Changed:
 
 ### Branching & Merging
 
-- **Feature/bugfix branches:** Branch off `dev` (e.g., `dev/crew-integration`).
-- **Stable releases:** Merge `dev` into `main` only when stable and tested.
-- **Development work:** Happens on `dev`; `main` reflects stable, production-ready code.
+- **Feature branches:** Branch off `dev` (e.g., `feature/crew-integration`, `feature/persistent-history`).
+- **Bugfix branches:** Branch off `dev` (e.g., `bugfix/settings-not-loading`, `bugfix/chat-history-display`).
+- **PR workflow:** Submit a PR from your feature/bugfix branch into `dev` for review and testing.
+- **Releasing to main:** Merge stable, tested versions of `dev` into `main` for production releases.
 
 ---
 
