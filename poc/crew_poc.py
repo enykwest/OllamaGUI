@@ -4,16 +4,99 @@ CrewAI Proof of Concept
 Demonstrates a simple multi-agent workflow using CrewAI:
 - Researcher agent gathers information
 - Writer agent creates content based on research
-- Reviewer agent validates quality
+- Editor agent validates quality
 
-Uses a dummy LLM backend (hardcoded responses) to avoid external dependencies.
+Uses a mock LLM backend (hardcoded responses) to avoid external dependencies.
 
 Usage:
     python -m poc.crew_poc
 """
+#%% Import Modules %%#
+from typing import Any, Dict, List
+from crewai import Agent, Crew, Task, BaseLLM
 
-from crewai import Agent, Task, Crew
-from poc.dummy_llm_backend import DummyLLM
+
+#%% Define Classes %%#
+
+# Define custom mock llm class for testing purposes
+class MockLLM(BaseLLM):
+    """
+    A custom LLM for testing CrewAI pipelines.
+
+    It adds crewai / pydantic required attributes and returns pre-programmed, ReAct formatted, responses when queried.
+
+    DESIGN NOTE & COMPLIANCE WARNING:
+    We inherit from BaseLLM instead of LLM as the higher level LLM class is essentially a quick-select
+    for various pre-programmed LLM interfaces to common services (e.g. Ollama, openai, anthropic, etc.)
+    Here we are building a new LLM service from scratch, so we drop down to BaseLLM to avoid the added pre-programmed complexity.
+    """
+
+    def __init__(self, **data: Any):
+        """
+        Initilize Mock LLM.
+        """
+
+        # Explicitly guarantee the 'model' field is populated in the construction payload before initilizing super
+        data.setdefault("model", "mock-llm-for-testing")
+        super().__init__(**data)
+
+        # The responses attribute holds the conversation history
+        # for this mock LLM we hard code responses and return them in order
+        self.responses: List[str] = [
+            "Thought: This is a hard-coded response from a mock LLM.\nFinal Answer: Agent call to LLM succeeded."
+        ]
+        # private counter
+        self._call_count: int = 0
+
+
+    # Original Template
+    def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
+        """
+        Main execution hook that intercepts crew prompts and returns text.
+
+        NOTE:
+        Updated 8/29/2026
+        When overloading the call method, remember that messages are formated like so:
+        [{'role': 'system', 'content': 'You are <agent role>. <agent backstory>.\nYour personal goal is: <agent goal>', 'cache_breakpoint': True},
+         {'role': 'user', 'content': "\nCurrent Task: " + <task description> + "\n\nThis is the expected criteria for your final answer: " + <task expected_outcome> + "\nyou MUST return the actual complete content as the final answer, not a summary.\n\nThis is the context you're working with:\n" + <task context> + "\n\nProvide your complete response:", 'cache_breakpoint': True}]
+        """
+        #print(messages) # debug
+        if self._call_count >= len(self.responses):
+            return 'Final Answer: No more mock responses configured in mock LLM.'
+        
+        response = self.responses[self._call_count] # fetch pre-written response
+        self._call_count += 1
+        return response
+    
+    
+class researchLLM(MockLLM):
+    "hardcoded mock LLM for researcher"
+
+    def _init__(self):
+        super.__init__()
+        self.responses: List[str] = [
+            "Thought: I have gathered all the information on the topics and identified key findings.\nFinal Answer: Agent call to LLM succeeded."
+        ]
+
+    
+class writerLLM(MockLLM):
+    "hardcoded mock LLM for researcher"
+
+    def _init__(self):
+        super.__init__()
+        self.responses: List[str] = [
+            "Thought: I have createe clear, engaging content based on research.\nFinal Answer: Agent call to LLM succeeded."
+        ]
+
+
+class editorLLM(MockLLM):
+    "hardcoded mock LLM for researcher"
+
+    def _init__(self):
+        super.__init__()
+        self.responses: List[str] = [
+            "Thought: I have validated the content quality and provided feedback.\nFinal Answer: Agent call to LLM succeeded."
+        ]
 
 
 class CrewPOC:
@@ -24,7 +107,7 @@ class CrewPOC:
 
     def __init__(self):
         """Initialize the POC with a dummy LLM."""
-        self.llm = DummyLLM()
+        #self.llm = MockLLM() # for this test we have transitioned to individual LLMs for each role 
         self.agents = {}
         self.tasks = {}
         self.crew = None
@@ -37,21 +120,24 @@ class CrewPOC:
             role="Researcher",
             goal="Gather information on topics and identify key findings.",
             backstory="An experienced researcher skilled at analysis.",
-            llm=self.llm,
+            llm=researchLLM(),
+            verbose=False,
         )
 
         self.agents["writer"] = Agent(
             role="Writer",
             goal="Create clear, engaging content based on research.",
             backstory="A skilled writer who crafts compelling narratives.",
-            llm=self.llm,
+            llm=writerLLM(),
+            verbose=False,
         )
 
-        self.agents["reviewer"] = Agent(
-            role="Reviewer",
+        self.agents["editor"] = Agent(
+            role="Editor",
             goal="Validate content quality and provide feedback.",
             backstory="A meticulous editor with high quality standards.",
-            llm=self.llm,
+            llm=editorLLM(),
+            verbose=False,
         )
 
     def create_tasks(self) -> None:
@@ -74,7 +160,7 @@ class CrewPOC:
         self.tasks["review"] = Task(
             description="Review the article for quality and clarity.",
             expected_output="Feedback and quality assessment.",
-            agent=self.agents["reviewer"],
+            agent=self.agents["editor"],
             context=[self.tasks["write"]],
         )
 
