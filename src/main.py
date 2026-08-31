@@ -1,6 +1,5 @@
 '''
 ToDo: make it work, make it right, make it fast
-- Implement "System" Prompts in settings.
 - Implement attaching files or RAG folders.
 - build settings window from backend?
     - Add torch_dtype to settings menu for transformers pipeline (e.g. float32, 16, 8 or 4)
@@ -35,6 +34,7 @@ class OllamaGui(baseGUI):
         # edit menu bar
         self.menu_bar_options['File']['Start Server'] = self.start_server
         self.create_menu() # re-initilize menu bar
+        self.llm_backend = PlaceholderLLM(model="PlaceholderLLM")
 
     def start_server(self,fix=True):
         try:

@@ -270,10 +270,15 @@ class ChatWindow(tk.Tk):
         )
         self.send_on_enter_checkbox.pack(side="bottom", fill="x", pady=(0, 5))
     
+        # 4c. Crew button
+        self.crew_button = tk.Button(right_controls, text="Crew", command=self.start_crew)
+        self.crew_button.pack(side="bottom", fill="x", pady=(0, 5))
+
         # 4b. Send button
         self.send_button = tk.Button(right_controls, text="Send", command=self.send_prompt)
         self.send_button.pack(side="bottom", fill="x", pady=(0, 5))
-    
+            
+
         
     def _toggle_send_on_enter(self):
         """Bind or unbind the <Return> event for sending message based on checkbox"""
@@ -361,7 +366,6 @@ class ChatWindow(tk.Tk):
         self.destroy()
         
 
-    # Add the missing send_prompt method
     def send_prompt(self):
         """Get the user's message and add it to the chat history"""
         user_message = self.user_prompt.get("1.0", tk.END).strip()
@@ -369,6 +373,11 @@ class ChatWindow(tk.Tk):
             self.chat_history.insert(tk.END, f"You: {user_message}\n\n")
             self.user_prompt.delete("1.0", tk.END)  # Clear the input field
     
+
+    # placeholder for crewai
+    def start_crew(self):
+        self.send_prompt()
+
     
     def new_window(self):
         subprocess.Popen([sys.executable, sys.argv[0]])

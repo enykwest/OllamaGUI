@@ -1,5 +1,7 @@
 import subprocess
 from warnings import warn
+from crewai import BaseLLM
+from typing import Any, Dict, List
 
 
 class LLMConnectionError(Exception):
@@ -36,10 +38,15 @@ server_dict = {}
 # server_dict["docker"] = OllamaDockerLLM
 
 
-class PlaceholderLLM:
+class PlaceholderLLM(BaseLLM):
     def __init__(self, model=None, settings=None):
         self.model=model
         self.settings=settings
+
+        # Explicitly guarantee the 'model' field is populated in the construction payload before initilizing super
+        data = dict()
+        data.setdefault("model", self.model)
+        super().__init__(**data)
         pass
     
     def test_LLM_connection(self, fix, previousAttempt):
@@ -47,12 +54,16 @@ class PlaceholderLLM:
     
     def _send_command(self, prompt):
         return "Placeholder: I am a placeholder for a real LLM. Please update your settings."
+
+    # required for crewai
+    def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
+        return "Final Answer: Placeholder: I am a placeholder for a real LLM. Please update your settings."
     
 server_dict["placeholder"] = PlaceholderLLM
 
 
 
-class OllamaBaremetalLLM:
+class OllamaBaremetalLLM(BaseLLM):
     def __init__(self, model="gemma3:1b", settings=None):
         self.model = model
         if settings is not None:
@@ -142,6 +153,10 @@ class OllamaBaremetalLLM:
             errorMsg = "FileNotFoundError\nAre you sure your prefix is set correctly?\nIs Ollama installed?"
             print(errorMsg)
         return (connectionStatus, errorMsg)
+
+    # required for crewai
+    def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
+        return "Final Answer: Placeholder: I am a placeholder for a real LLM. Please update your settings."
     
     def exit(self):
         pass # should be defined for each server type
@@ -237,7 +252,7 @@ server_dict["podman"] = OllamaPodmanLLM
 try:
     from transformers import pipeline
     import torch
-    class TransformersLLM:
+    class TransformersLLM(BaseLLM):
         # Note that the default location for the model cache is: C:\Users\<USER>\.cache\huggingface\hub\<model--name>\snapshots
         def __init__(self, model="microsoft/DialoGPT-small", settings={}):
             
@@ -337,7 +352,13 @@ try:
                 print(e)
                 errorMsg = e # don't try to fix the problem, just report it
             return (connectionStatus, errorMsg)
-        
+
+
+        # required for crewai
+        def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
+            return "Final Answer: Placeholder: I am a placeholder for a real LLM. Please update your settings."        
+
+
         def exit(self):
             pass # should be defined for each server type
 
