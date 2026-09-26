@@ -1,4 +1,13 @@
-# src/gui/chat_window.py
+'''
+A script holding all the GUI related setup
+File Location: src/gui/chat_window.py
+
+TODO:
+- update send_prompt to send message to chat history
+- update save and open functions to use the ChatHistory or push save and open functions to conversation handler
+
+'''
+# Import Modules
 import tkinter as tk
 from tkinter import scrolledtext, filedialog, messagebox, ttk
 import datetime
@@ -9,6 +18,11 @@ import subprocess
 import sys
 import webbrowser # to link to github
 from datetime import date
+# so we can do standalone testing
+try:
+  from gui.conversation_handler import ChatHistory
+except:
+  from conversation_handler import ChatHistory
 
 #%% Define Classes
 class ChatWindow(tk.Tk):
@@ -18,6 +32,7 @@ class ChatWindow(tk.Tk):
     #TODO there is a bug where settings don't load properly in new windows
     def __init__(self):
         super().__init__()
+        self.chat_history = ChatHistory()
         
         # Initialize filename with current date and time
         current_datetime = datetime.datetime.now()
@@ -162,6 +177,7 @@ class ChatWindow(tk.Tk):
             # Handler for save button
             def save_sys_prompt():
                 self.settings['sys_prompt'] = sys_prompt_text.get("1.0", "end-1c")  # strip trailing newline
+                self.chat_history.add_message({'System':self.settings['sys_prompt']}) # Note that we changed the system prompt in the chat history
                 sys_prompt_win.destroy()
         
             # Handler for cancel button
@@ -243,9 +259,9 @@ class ChatWindow(tk.Tk):
 
 
     def create_widgets(self):
-        # 1. Chat history (top)
-        self.chat_history = scrolledtext.ScrolledText(self, wrap="word", width=40, height=10)
-        self.chat_history.pack(side="top", fill='both', expand=True, padx=5, pady=5)
+        # 1. Chat history window (top)
+        self.chat_history_window = scrolledtext.ScrolledText(self, wrap="word", width=40, height=10)
+        self.chat_history_window.pack(side="top", fill='both', expand=True, padx=5, pady=5)
     
         # 2a. Bottom frame for input and controls
         bottom_frame = tk.Frame(self)
@@ -270,7 +286,7 @@ class ChatWindow(tk.Tk):
         )
         self.send_on_enter_checkbox.pack(side="bottom", fill="x", pady=(0, 5))
     
-        # 4c. Crew button
+        # 4c. crewai button
         self.crew_button = tk.Button(right_controls, text="Crew", command=self.start_crew)
         self.crew_button.pack(side="bottom", fill="x", pady=(0, 5))
 
@@ -367,11 +383,14 @@ class ChatWindow(tk.Tk):
         
 
     def send_prompt(self):
-        """Get the user's message and add it to the chat history"""
+        """Get the user's message and add it to the chat history and chat history window"""
         user_message = self.user_prompt.get("1.0", tk.END).strip()
         if user_message:
-            self.chat_history.insert(tk.END, f"You: {user_message}\n\n")
+            self.chat_history_window.insert(tk.END, f"You: {user_message}\n\n")
             self.user_prompt.delete("1.0", tk.END)  # Clear the input field
+            self.chat_history.add_message({'You':user_message})
+            #debug
+            print(self.chat_history.history)
     
 
     # placeholder for crewai
@@ -384,7 +403,7 @@ class ChatWindow(tk.Tk):
 
     
     def open_file(self):
-        """Open a file and load its contents into chat_history"""
+        """Open a file and load its contents into chat_history_window"""
         file_path = filedialog.askopenfilename(
             defaultextension=".md",
             filetypes=[("Markdown Files", "*.md"), ("Text Files", "*.txt"), ("All Files", "*.*")]
@@ -398,13 +417,13 @@ class ChatWindow(tk.Tk):
             try:
                 with open(file_path, 'r', encoding='utf-8') as file:
                     # Clear current chat history
-                    self.chat_history.delete("1.0", tk.END)
+                    self.chat_history_window.delete("1.0", tk.END)
                     
                     # Read file contents safely as plain text
                     file_content = file.read()
                     
                     # Insert content into chat history
-                    self.chat_history.insert(tk.END, file_content)
+                    self.chat_history_window.insert(tk.END, file_content)
             except Exception as e:
                 messagebox.showerror("Error", f"Could not open file: {str(e)}")
 
@@ -417,7 +436,7 @@ class ChatWindow(tk.Tk):
         else:
             try:
                 with open(self.filename, 'w', encoding='utf-8') as file:
-                    file.write(self.chat_history.get("1.0", tk.END))
+                    file.write(self.chat_history_window.get("1.0", tk.END))
             except Exception as e:
                 messagebox.showerror("Error", f"Could not save file: {str(e)}")
 
@@ -437,7 +456,7 @@ class ChatWindow(tk.Tk):
             
             try:
                 with open(file_path, 'w', encoding='utf-8') as file:
-                    file.write(self.chat_history.get("1.0", tk.END))
+                    file.write(self.chat_history_window.get("1.0", tk.END))
             except Exception as e:
                 messagebox.showerror("Error", f"Could not save file: {str(e)}")
 

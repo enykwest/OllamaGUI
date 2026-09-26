@@ -1,6 +1,9 @@
 '''
 ToDo: make it work, make it right, make it fast
+- Integrate crewai
+  - multi-step reasoning / role based reasoning and automated tool use
 - Implement attaching files or RAG folders.
+  - Defered in favor of crewai as that may affect how we do things
 - build settings window from backend?
     - Add torch_dtype to settings menu for transformers pipeline (e.g. float32, 16, 8 or 4)
     - Allow quantized models with bitsandbytes.
@@ -14,12 +17,13 @@ Bugs:
         - Simple work around, close previous window before starting new server. If you accidently double start a server, close the window.
 - use accelerate to split large models between gpu and cpu
     - validated using Phi-4-Mini-Instruct and Llama-3.2-3B-Instruct on limited memory device.
-    - #bug/low_priority/incompatible_model microsoft/DialoGPT-small seems to work, but google/gemma-3-1b-it only runs on CPU currently as the GPU version requires trition
-        and triton is only availible on linux. This is an odd bug where the backend "loads properly" but fails during runtime.
+    - #bug/low_priority/incompatible_model microsoft/DialoGPT-small seems to work,
+      but google/gemma-3-1b-it only runs on CPU currently as the GPU version requires trition
+      and triton is only availible on linux. This is an odd bug where the backend "loads properly" but fails during runtime.
 - #bug/low_priority/incompatible_model , Gemma3 throws a *** jinja2.exceptions.TemplateError if the history STARTS with an assistant message
-    (Conversation roles must alternate user/assistant/user/assistant/...) , hotfix applied in llm_backend.manage_chat_history,
+    - (Conversation roles must alternate user/assistant/user/assistant/...) , hotfix applied in llm_backend.manage_chat_history,
     but I am not sure how this will interact with RAG.
-    My assumption is we have to reveal the tools in the system prompt with some one shot examples, then answer the assistant as the "user".    
+    My assumption is we have to reveal the tools in the system prompt with some one shot examples, then answer the assistant as the "user". Crewai may help handle this for us.
 '''
 from gui.chat_window import ChatWindow as baseGUI
 import tkinter as tk
@@ -64,26 +68,28 @@ class OllamaGui(baseGUI):
         self.destroy()
 
     def push_to_chat_window(self, text):
-        self.chat_history.config(state=tk.NORMAL)
-        self.chat_history.insert(tk.END, "\nANNOUNCMENT:\n" + text + '\n')
-        self.chat_history.yview(tk.END)
-        self.chat_history.config(state=tk.DISABLED)
+        self.chat_history_window.config(state=tk.NORMAL)
+        self.chat_history_window.insert(tk.END, "\nANNOUNCMENT:\n" + text + '\n')
+        self.chat_history_window.yview(tk.END)
+        self.chat_history_window.config(state=tk.DISABLED)
 
     def send_prompt(self):
         prompt = self.user_prompt.get("1.0", tk.END)
-        self.chat_history.config(state=tk.NORMAL)
-        self.chat_history.insert(tk.END, "\nUser:\n" + prompt + '\n')
-        self.chat_history.yview(tk.END)
-        self.chat_history.config(state=tk.DISABLED)
+        self.chat_history_window.config(state=tk.NORMAL)
+        self.chat_history_window.insert(tk.END, "\nUser:\n" + prompt + '\n')
+        self.chat_history_window.yview(tk.END)
+        self.chat_history_window.config(state=tk.DISABLED)
         self.user_prompt.delete('1.0', tk.END)
-        self.chat_history.update_idletasks()
+        self.chat_history_window.update_idletasks()
 
+        self.chat_history.add_message({'User':prompt})
         response = self.llm_backend._send_command(prompt)
+        self.chat_history.add_message( {self.llm_backend.model : response} )
 
-        self.chat_history.config(state=tk.NORMAL)
-        self.chat_history.insert(tk.END, response)
-        self.chat_history.yview(tk.END)
-        self.chat_history.config(state=tk.DISABLED)
+        self.chat_history_window.config(state=tk.NORMAL)
+        self.chat_history_window.insert(tk.END, response)
+        self.chat_history_window.yview(tk.END)
+        self.chat_history_window.config(state=tk.DISABLED)
         return 0
 
 def main():

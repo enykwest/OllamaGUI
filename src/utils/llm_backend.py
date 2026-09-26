@@ -55,7 +55,7 @@ class PlaceholderLLM(BaseLLM):
     def _send_command(self, prompt):
         return "Placeholder: I am a placeholder for a real LLM. Please update your settings."
 
-    # required for crewai
+    # Inheriting from crewai's BaseLLM and adding a call command is the simplest way to make custom crewai compatible backends
     def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
         return "Final Answer: Placeholder: I am a placeholder for a real LLM. Please update your settings."
     
@@ -154,7 +154,7 @@ class OllamaBaremetalLLM(BaseLLM):
             print(errorMsg)
         return (connectionStatus, errorMsg)
 
-    # required for crewai
+    # Inheriting from crewai's BaseLLM and adding a call command is the simplest way to make custom crewai compatible backends
     def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
         return "Final Answer: Placeholder: I am a placeholder for a real LLM. Please update your settings."
     
@@ -354,7 +354,7 @@ try:
             return (connectionStatus, errorMsg)
 
 
-        # required for crewai
+        # Inheriting from crewai's BaseLLM and adding a call command is the simplest way to make custom crewai compatible backends
         def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
             return "Final Answer: Placeholder: I am a placeholder for a real LLM. Please update your settings."        
 
