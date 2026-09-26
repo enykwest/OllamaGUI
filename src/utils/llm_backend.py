@@ -356,11 +356,15 @@ try:
 
         # Inheriting from crewai's BaseLLM and adding a call command is the simplest way to make custom crewai compatible backends
         def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
-            return "Final Answer: Placeholder: I am a placeholder for a real LLM. Please update your settings."        
+            response = self.pipe(messages, # send whole chat history, not just most recent message
+                                 max_new_tokens=self.settings['max_new_tokens'],
+                                 )
+            return response[0]['generated_text'][-1]['content']     
 
 
         def exit(self):
             pass # should be defined for each server type
+
 
 except ImportError:
     class TransformersLLM(PlaceholderLLM):

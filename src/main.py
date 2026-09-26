@@ -67,34 +67,22 @@ class OllamaGui(baseGUI):
         print('Closing GUI\n\n')
         self.destroy()
 
-    def push_to_chat_window(self, text):
-        self.chat_history_window.config(state=tk.NORMAL)
-        self.chat_history_window.insert(tk.END, "\nANNOUNCMENT:\n" + text + '\n')
-        self.chat_history_window.yview(tk.END)
-        self.chat_history_window.config(state=tk.DISABLED)
 
-    def send_prompt(self):
-        prompt = self.user_prompt.get("1.0", tk.END)
-        self.chat_history_window.config(state=tk.NORMAL)
-        self.chat_history_window.insert(tk.END, "\nUser:\n" + prompt + '\n')
-        self.chat_history_window.yview(tk.END)
-        self.chat_history_window.config(state=tk.DISABLED)
-        self.user_prompt.delete('1.0', tk.END)
-        self.chat_history_window.update_idletasks()
+    def process_prompt(self, prompt):
+        # Return Model name and response to the prompt
+        return (self.llm_backend.model , self.llm_backend._send_command(prompt) )
 
-        self.chat_history.add_message({'User':prompt})
-        response = self.llm_backend._send_command(prompt)
-        self.chat_history.add_message( {self.llm_backend.model : response} )
 
-        self.chat_history_window.config(state=tk.NORMAL)
-        self.chat_history_window.insert(tk.END, response)
-        self.chat_history_window.yview(tk.END)
-        self.chat_history_window.config(state=tk.DISABLED)
-        return 0
+    def process_prompt_2(self, prompt):
+        # Return Model name and response to the prompt
+        # TODO implement history context
+        return (self.llm_backend.model , self.llm_backend.call(self.chat_history.history) )
+
 
 def main():
     app = OllamaGui()
     app.mainloop()
+
 
 if __name__ == "__main__":
     main()

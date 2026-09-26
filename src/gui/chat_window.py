@@ -29,6 +29,7 @@ class ChatWindow(tk.Tk):
     """
     Custom class that builds a GUI interface for Ollama and other self hosted LLMs.
     """
+
     #TODO there is a bug where settings don't load properly in new windows
     def __init__(self):
         super().__init__()
@@ -78,7 +79,6 @@ class ChatWindow(tk.Tk):
         }
         today = date.today()
         if (today.month == 9) & (today.day == 19):
-        #if (today.month == 11) & (today.day == 12): # debug
             self.settings["sys_prompt"] = "Yarrr! Today be September 19th, International Talk Like a Pirate Day ya landluber! Ye be a help assistant pirate. Answer all questions accurately, but use pirate-y speak like: ahoy! ay matey! nay! avast! and bilge water!"
         else:
             self.settings["sys_prompt"] = ""
@@ -91,6 +91,13 @@ class ChatWindow(tk.Tk):
             # use default settings instead
             
         self.create_widgets()
+
+
+    def push_to_chat_window(self, text):
+        self.chat_history_window.config(state=tk.NORMAL)
+        self.chat_history_window.insert(tk.END, "\nANNOUNCMENT:\n" + text + '\n')
+        self.chat_history_window.yview(tk.END)
+        self.chat_history_window.config(state=tk.DISABLED)
 
 
     # Placeholder function for new features
@@ -216,7 +223,8 @@ class ChatWindow(tk.Tk):
                     messagebox.showinfo("Preset Loaded", f"Preset loaded from {os.path.basename(path)}")
                 except Exception as e:
                     messagebox.showerror("Error", f"Failed to load preset: {e}")
-                    
+
+          
         def save_preset():
             path = filedialog.asksaveasfilename(
                 title="Save Preset",
@@ -235,6 +243,7 @@ class ChatWindow(tk.Tk):
                 except Exception as e:
                     messagebox.showerror("Error", f"Failed to save preset: {e}")
         
+
         def save_changes():
             self.settings["server_type"] = server_var.get()
             self.settings["model"] = model_var.get()
@@ -286,8 +295,9 @@ class ChatWindow(tk.Tk):
         )
         self.send_on_enter_checkbox.pack(side="bottom", fill="x", pady=(0, 5))
     
+        # DEBUG
         # 4c. crewai button
-        self.crew_button = tk.Button(right_controls, text="Crew", command=self.start_crew)
+        self.crew_button = tk.Button(right_controls, text="LLM Call", command=self.llm_call)
         self.crew_button.pack(side="bottom", fill="x", pady=(0, 5))
 
         # 4b. Send button
@@ -304,7 +314,8 @@ class ChatWindow(tk.Tk):
             self.user_prompt.bind('<Return>', self._send_on_enter) 
         else:
             self.user_prompt.unbind('<Return>')
-            
+           
+ 
     def _send_on_enter(self, event):
         self.send_prompt()
         return "break"  # Prevent newline in Text widget
@@ -383,19 +394,71 @@ class ChatWindow(tk.Tk):
         
 
     def send_prompt(self):
-        """Get the user's message and add it to the chat history and chat history window"""
-        user_message = self.user_prompt.get("1.0", tk.END).strip()
-        if user_message:
-            self.chat_history_window.insert(tk.END, f"You: {user_message}\n\n")
-            self.user_prompt.delete("1.0", tk.END)  # Clear the input field
-            self.chat_history.add_message({'You':user_message})
-            #debug
-            print(self.chat_history.history)
+        prompt = self.user_prompt.get("1.0", tk.END)
+
+        # Insert prompt into chat window
+        self.chat_history_window.config(state=tk.NORMAL)
+        self.chat_history_window.insert(tk.END, "\nUser: " + prompt + '\n')
+        self.chat_history_window.yview(tk.END)
+        self.chat_history_window.config(state=tk.DISABLED)
+        self.user_prompt.delete('1.0', tk.END)
+        self.chat_history_window.update_idletasks()
+
+        self.chat_history.add_message(
+          {'role':'user', 'content': prompt}
+          )
+        model, response = self.process_prompt(prompt)
+        self.chat_history.add_message(
+          {'role' : 'assistant',
+          'content' : response,
+          'model' : model,
+          } )
+
+        # Insert response into chat window
+        self.chat_history_window.config(state=tk.NORMAL)
+        self.chat_history_window.insert(tk.END, model +': ' + response + '\n')
+        self.chat_history_window.yview(tk.END)
+        self.chat_history_window.config(state=tk.DISABLED)
+        return 0
+
+
+    def process_prompt(self, prompt):
+        # Placeholder for an LLM
+        return ("Placeholder", "No reply")
     
 
-    # placeholder for crewai
-    def start_crew(self):
-        self.send_prompt()
+    # DEBUG
+    def llm_call(self):
+        prompt = self.user_prompt.get("1.0", tk.END)
+
+        # Insert prompt into chat window
+        self.chat_history_window.config(state=tk.NORMAL)
+        self.chat_history_window.insert(tk.END, "\nUser: " + prompt + '\n')
+        self.chat_history_window.yview(tk.END)
+        self.chat_history_window.config(state=tk.DISABLED)
+        self.user_prompt.delete('1.0', tk.END)
+        self.chat_history_window.update_idletasks()
+
+        self.chat_history.add_message(
+          {'role':'user', 'content': prompt}
+          )
+        model, response = self.process_prompt_2(prompt)
+        self.chat_history.add_message(
+          {'role' : 'assistant',
+          'content' : response,
+          'model' : model,
+          } )
+
+        #debug
+        #for item in self.chat_history.history:
+        #    print(item)
+        
+        # Insert response into chat window
+        self.chat_history_window.config(state=tk.NORMAL)
+        self.chat_history_window.insert(tk.END, model +': ' + response + '\n')
+        self.chat_history_window.yview(tk.END)
+        self.chat_history_window.config(state=tk.DISABLED)
+        return 0
 
     
     def new_window(self):
