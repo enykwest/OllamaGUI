@@ -10,6 +10,11 @@ Uses a mock LLM backend (hardcoded responses) to avoid external dependencies.
 
 Usage:
     python -m poc.crew_poc
+
+Also see:
+- https://docs.crewai.com/
+- https://docs.crewai.com/v1.15.18/en/introduction
+- 
 """
 #%% Import Modules %%#
 from typing import Any, Dict, List
@@ -85,7 +90,7 @@ class writerLLM(MockLLM):
     def _init__(self):
         super.__init__()
         self.responses: List[str] = [
-            "Thought: I have createe clear, engaging content based on research.\nFinal Answer: Agent call to LLM succeeded."
+            "Thought: I have created clear, engaging content based on research.\nFinal Answer: Agent call to LLM succeeded."
         ]
 
 
