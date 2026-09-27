@@ -1,5 +1,6 @@
 '''
 ToDo: make it work, make it right, make it fast
+- Now that we have a deticated module for chat history (conversation_handler.py) we should re-implement saving and loading conversations.
 - Integrate crewai
   - multi-step reasoning / role based reasoning and automated tool use
 - Implement attaching files or RAG folders.
@@ -69,13 +70,9 @@ class OllamaGui(baseGUI):
 
 
     def process_prompt(self, prompt):
-        # Return Model name and response to the prompt
-        return (self.llm_backend.model , self.llm_backend._send_command(prompt) )
-
-
-    def process_prompt_2(self, prompt):
-        # Return Model name and response to the prompt
+        '''Send a prompt to the LLM model and Return the model name and response.'''
         # TODO implement history context
+        # TODO ensure system prompt is always in prompt if not empty
         return (self.llm_backend.model , self.llm_backend.call(self.chat_history.history) )
 
 

@@ -294,11 +294,6 @@ class ChatWindow(tk.Tk):
             command=self._toggle_send_on_enter  # Implement this method!
         )
         self.send_on_enter_checkbox.pack(side="bottom", fill="x", pady=(0, 5))
-    
-        # DEBUG
-        # 4c. crewai button
-        self.crew_button = tk.Button(right_controls, text="LLM Call", command=self.llm_call)
-        self.crew_button.pack(side="bottom", fill="x", pady=(0, 5))
 
         # 4b. Send button
         self.send_button = tk.Button(right_controls, text="Send", command=self.send_prompt)
@@ -426,40 +421,6 @@ class ChatWindow(tk.Tk):
         # Placeholder for an LLM
         return ("Placeholder", "No reply")
     
-
-    # DEBUG
-    def llm_call(self):
-        prompt = self.user_prompt.get("1.0", tk.END)
-
-        # Insert prompt into chat window
-        self.chat_history_window.config(state=tk.NORMAL)
-        self.chat_history_window.insert(tk.END, "\nUser: " + prompt + '\n')
-        self.chat_history_window.yview(tk.END)
-        self.chat_history_window.config(state=tk.DISABLED)
-        self.user_prompt.delete('1.0', tk.END)
-        self.chat_history_window.update_idletasks()
-
-        self.chat_history.add_message(
-          {'role':'user', 'content': prompt}
-          )
-        model, response = self.process_prompt_2(prompt)
-        self.chat_history.add_message(
-          {'role' : 'assistant',
-          'content' : response,
-          'model' : model,
-          } )
-
-        #debug
-        #for item in self.chat_history.history:
-        #    print(item)
-        
-        # Insert response into chat window
-        self.chat_history_window.config(state=tk.NORMAL)
-        self.chat_history_window.insert(tk.END, model +': ' + response + '\n')
-        self.chat_history_window.yview(tk.END)
-        self.chat_history_window.config(state=tk.DISABLED)
-        return 0
-
     
     def new_window(self):
         subprocess.Popen([sys.executable, sys.argv[0]])
