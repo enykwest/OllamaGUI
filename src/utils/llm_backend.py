@@ -151,21 +151,7 @@ server_dict["placeholder"] = PlaceholderLLM
 
 def CrewAI_LLM(model, settings):
     '''Wrapper for CreawAI's LLM class. Adds required methods.'''
-    # debug
-    #llm = LLM('ollama/phi4-mini') # works
-    #llm = LLM(model=model) # works
-
-    # crewai must be behind the curve, max_new_tokens is the preferred flag as of 2026
-    try:
-        setting['max_tokens'] = settings['max_new_tokens']
-    except:
-        pass
-
-    # Not all of our settings are compatible with crewai's LLM class an causes issues
-    signature = inspect.signature(LLM)
-    valid_keys = signature.parameters.keys()
-    valid_settings = {key:value for (key, value) in settings.items() if key in valid_keys} 
-    llm = LLM(**valid_settings)
+    llm = LLM(model=model) # The other keywords appear to be descriptors as opposed to actual settings. More research is needed.
     
     def test_LLM_connection(fix, previousAttempt):
         '''
@@ -195,203 +181,14 @@ def CrewAI_LLM(model, settings):
             pass # no attempt to fix the connection
         return (connectionStatus, errorMsg)
     
-    # Attach method to llm
+    # Attach the test method to llm
     llm.test_LLM_connection = test_LLM_connection
 
-    #debug
-    #llm.test_LLM_connection = lambda fix, previousAttempt: (True, "")
-
-    return llm # debug
-    #return LLM(model=model, **settings)
+    return llm
 server_dict["crewai_llm"] = CrewAI_LLM
 
 
-class OllamaBaremetalLLM(BaseLLM):
-    def __init__(self, model="gemma3:1b", settings=None):
-        self.model = model
-        if settings is not None:
-            warn("settings are not yet implemented for OllamaBaremetalLLM")
-
-    @property
-    def prefix(self):
-        return r'ollama run ' + self.model
-
-    def _send_command(self, prompt, formatResponse=True, fix=True):
-        prefix = self.prefix.split(" ")
-        command = prefix + [prompt]
-        print(command)
-                
-        try:
-            response = subprocess.run(command, capture_output=True)
-        except FileNotFoundError:
-            # Subprocess will throw this error if it can't find the command
-            # e.g.if Ollama isn't installed
-            errorMsg = "FileNotFoundError\nAre you sure your prefix is set correctly?\nIs Ollama installed?"
-            print(errorMsg)
-            
-            if formatResponse:
-                return errorMsg 
-            else:
-                raise FileNotFoundError
-        
-        if not formatResponse:
-            print(f"Response returncode: {response.returncode}")
-            return response
-        else:
-            if response.returncode == 0: # if no errors
-                response = str(response.stdout.decode())
-                response = f"\n{self.model}:\n" + response + "\n"
-                print(response)
-            else:
-                errorMessage = '\nOops! Something went wrong! Error Code: {}\n\n'.format(response.returncode)
-                print(errorMessage)
-                
-                if fix:
-                    connectionStatus, errorMsg = self.test_LLM_connection(fix=True, previousAttempt=response)
-                    if connectionStatus:
-                        # if fixed try again
-                        response = self._send_command(prompt, formatResponse, fix=False)
-                    else:
-                        response = errorMessage + errorMsg
-                else:
-                    response = errorMessage
-        
-        return response
-
-
-    def test_LLM_connection(self, fix, previousAttempt):
-        '''
-        Customized to each server type to test for and fix common errors.
-
-        Parameters
-        ----------
-        fix : BOOL
-            Should the function attempt to fix a broken connection?
-        previousAttempt : TYPE
-            The return of a previous _send_command.
-
-        Returns
-        -------
-        connectionStatus : BOOL
-            True if the connection has been re-established.
-        errorMsg : STR
-            Error message if connection cannot be re-established.
-
-        '''
-        connectionStatus = False
-        errorMsg = ""
-        try:
-            if previousAttempt is None:
-                response = self._send_command(r"hello", formatResponse=False, fix=False)
-            else:
-                response = previousAttempt
-                
-            if response.returncode == 0:
-                connectionStatus = True
-            elif fix:
-                pass # Customize to each server type
-        except FileNotFoundError:
-            # This can happen if the command passed to subprocess doesn't exist
-            # e.g.if Ollama isn't installed
-            errorMsg = "FileNotFoundError\nAre you sure your prefix is set correctly?\nIs Ollama installed?"
-            print(errorMsg)
-        return (connectionStatus, errorMsg)
-
-    # Inheriting from crewai's BaseLLM and adding a call command is the simplest way to make custom crewai compatible backends
-    def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
-        return "Final Answer: Placeholder: I am a placeholder for a real LLM. Please update your settings."
-    
-    def exit(self):
-        pass # should be defined for each server type
-        
-# Register backend
-server_dict["ollama"] = OllamaBaremetalLLM
-
-
-class OllamaPodmanLLM(OllamaBaremetalLLM):
-    def __init__(self, model="codellama", settings=None):
-        self.model = model
-        if settings is not None:
-            warn("settings are not yet implemented for OllamaPodmanLLM")
-
-    @property
-    def prefix(self):
-        return r'podman exec ollama ollama run ' + self.model
-
-    # inherited    
-    #def _send_command(self, prompt, formatResponse=True, fix=True):
-
-    def test_LLM_connection(self, fix, previousAttempt):
-        connectionStatus = False
-        errorMsg = ""
-        try:
-            if previousAttempt is None:
-                response = self._send_command(r"hello", formatResponse=False, fix=False)
-            else:
-                response = previousAttempt
-                
-            if response.returncode == 0:
-                connectionStatus = True
-            elif fix:
-                stderr = response.stderr.decode()
-                print(stderr)
-                if r"container state improper" in stderr:
-                    print('Trying to start Ollama container...\n\n')
-                    response = self.start_ollama_container()
-                    stderr = response.stderr.decode()
-                    print(stderr)
-                if r"unable to connect to Podman socket" in stderr:
-                    print('Trying to start container service...\n\n')
-                    response = self.start_server()
-                    stderr = response.stderr.decode()
-                    print(stderr)
-                    print('Trying to start Ollama container...\n\n')
-                    response = self.start_ollama_container()
-                    stderr = response.stderr.decode()
-                    print(stderr)
-                print('Testing LLM again...\n\n')
-                response = self._send_command(r"hello", formatResponse=False, fix=False)
-                stderr = response.stderr.decode()
-                
-                if response.returncode == 0:
-                    connectionStatus = True
-                else:
-                    print(stderr)
-                    errorMsg = stderr
-        except FileNotFoundError:
-            errorMsg = "FileNotFoundError\nAre you sure your prefix is set correctly?\nIs Ollama installed?"
-            print(errorMsg)
-        return (connectionStatus, errorMsg)
-    
-
-    def start_server(self):
-        command = r'podman machine start'
-        return subprocess.run(command, capture_output=True)
-
-    def stop_server(self):
-        command = r'podman machine stop'
-        return subprocess.run(command, capture_output=True)
-
-    def start_ollama_container(self):
-        command = r'podman start ollama'
-        return subprocess.run(command, capture_output=True)
-
-    def stop_ollama_container(self):
-        command = r'podman stop ollama'
-        return subprocess.run(command, capture_output=True)
-
-    def exit(self):
-        print('Stopping Container Service')
-        try: 
-            self.stop_server()
-        except FileNotFoundError: # this can happen if podman isn't installed
-            errorMsg = "FileNotFoundError\nAre you sure your prefix is set correctly?\nIs Ollama installed?"
-            print(errorMsg)
-
-# Register backend
-server_dict["podman"] = OllamaPodmanLLM
-
-
+# Transformers Backend
 try:
     from transformers import pipeline
     import torch

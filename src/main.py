@@ -1,6 +1,10 @@
 '''
 ToDo: make it work, make it right, make it fast
+- Update Documentation to match new features
 - Now that we have a deticated module for chat history (conversation_handler.py) we should re-implement saving and loading conversations.
+- Setup Generic OpenAI-compatible Endpoint via crewai LLM class
+  - Add API Key to settings GUI
+  - Add base_url to settings GUI
 - Integrate crewai
   - multi-step reasoning / role based reasoning and automated tool use
 - Implement attaching files or RAG folders.

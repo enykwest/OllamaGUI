@@ -136,12 +136,9 @@ class ChatWindow(tk.Tk):
         server_frame.pack(side="left", fill="y", expand=True)
         
         server_types = [
-            ("Ollama", "ollama"),
-            ("Ollama via Podman", "podman"),
-            ("Ollama via Docker", "docker"),
             ("Transformers Pipeline", "transformers"),
             ("Ollama or Cloud Provider", "crewai_llm"),
-            ("Generic OpenAI-compatible Endpoint", "crewai_custom_llm"),
+            #("Generic OpenAI-compatible Endpoint", "crewai_custom_llm"), # TBD
         ]
         server_var = tk.StringVar(value=self.settings.get("server_type", "podman"))
 
