@@ -140,6 +140,8 @@ class ChatWindow(tk.Tk):
             ("Ollama via Podman", "podman"),
             ("Ollama via Docker", "docker"),
             ("Transformers Pipeline", "transformers"),
+            ("Ollama or Cloud Provider", "crewai_llm"),
+            ("Generic OpenAI-compatible Endpoint", "crewai_custom_llm"),
         ]
         server_var = tk.StringVar(value=self.settings.get("server_type", "podman"))
 
@@ -417,8 +419,8 @@ class ChatWindow(tk.Tk):
         return 0
 
 
-    def process_prompt(self, prompt):
-        # Placeholder for an LLM
+    def process_prompt(self, prompt: str) -> (str, str):
+        '''Placeholder, overload this method with the logic required to push a prompt to an LLM and return the LLM name and response.'''
         return ("Placeholder", "No reply")
     
     

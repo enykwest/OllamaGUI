@@ -1,13 +1,25 @@
+'''
+Holds all the code regarding the setup, querying, and shutdown of LLM models.
+
+New LLMs are implemented as custom classes and are made availible to the user by adding them to the `server_dict` dictionary.
+All LLM classes or functions should take in the model name (str) and a settings dictionary and return an LLM object.
+The PlaceholderLLM serves as a minimally viable template for new LLMs.
+Do not inherit from PlaceholderLLM, but be sure to implement all of the same methods.
+Currently we inherit from Crewai's BaseLLM, which feels correct as we can always write our own BaseLLM class if needed.
+'''
+
+#%% Import Modules %%#
 import subprocess
 from warnings import warn
-from crewai import BaseLLM
+from crewai import BaseLLM, LLM
 from typing import Any, Dict, List
+import inspect
 
-
+#%% Utilities %%#
 class LLMConnectionError(Exception):
     pass
 
-# needs more work
+
 def get_llm_backend(settings):
     try:
         server_type = settings["server_type"]
@@ -24,6 +36,8 @@ def get_llm_backend(settings):
         print(r"Turn on the read permissions under repos")
         raise LLMConnectionError("OSError encountered while loading backend.")
     except Exception as e:
+        print('\n\nWTF\n\n') # debug 
+        print(f"{e} encountered while loading backend.")
         raise LLMConnectionError(f"{e} encountered while loading backend.")
 
 # dictionary to hold all server classes
@@ -31,36 +45,165 @@ server_dict = {}
 
 
 
-#%% Server Classes
-# Example for future extension:
+#%% Server Classes %%#
+# Example for future extensions:
 # class OllamaDockerLLM:
 #     ...
 # server_dict["docker"] = OllamaDockerLLM
 
 
 class PlaceholderLLM(BaseLLM):
-    def __init__(self, model=None, settings=None):
+    def __init__(self, model='Placeholder', settings={}):
+        '''
+        The PlaceholderLLM serves as a minimally viable template for new LLMs.
+        Do not inherit from PlaceholderLLM, but be sure to implement all of the methods
+        '''
         self.model=model
         self.settings=settings
 
         # Explicitly guarantee the 'model' field is populated in the construction payload before initilizing super
         data = dict()
-        data.setdefault("model", self.model)
+        data.setdefault('model', self.model)
         super().__init__(**data)
         pass
     
+    
     def test_LLM_connection(self, fix, previousAttempt):
+        '''
+        A method to test if we sucessfully connected to the LLM or not.
+        It should be customized to each server type to test for and fix common errors.
+
+        Parameters
+        ----------
+        fix : BOOL
+            Should the method attempt to fix a broken connection?
+        previousAttempt : TYPE
+            The return of a previous _send_command.
+
+        Returns
+        -------
+        connectionStatus : BOOL
+            True if the connection has been re-established.
+        errorMsg : STR
+            Error message if connection cannot be re-established.
+
+        '''
         return True , "Placeholder LLM"
     
-    def _send_command(self, prompt):
-        return "Placeholder: I am a placeholder for a real LLM. Please update your settings."
-
-    # Inheriting from crewai's BaseLLM and adding a call command is the simplest way to make custom crewai compatible backends
-    def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
-        return "Final Answer: Placeholder: I am a placeholder for a real LLM. Please update your settings."
     
+    # deprecated in lieu of call
+    def _send_command(self, prompt):
+        '''
+        Take in a user prompt from the GUI , format it for ingestion into the LLM, send it to the LLM, and return the LLM's formated response to the GUI.
+        '''
+
+        return "I am a placeholder for a real LLM. Please update your settings."
+
+    
+    def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
+        '''
+        Inheriting from crewai's BaseLLM and adding a call command is the simplest way to make custom crewai compatible backends.
+        Adding to crews SUPPORTED_NATIVE_PROVIDERS for use with the LLM class would be superior, but require more introspection into how the crewai LLM class works.
+        Sources:
+        - BaseLLM URL: https://github.com/crewAIInc/crewAI/blob/main/lib/crewai/src/crewai/llms/base_llm.py
+        - LLM URL: https://github.com/crewAIInc/crewAI/blob/main/lib/crewai/src/crewai/llm.py
+        
+        From BaseLLM,
+        "Call the LLM with the given messages.
+        Args:
+            messages: Input messages for the LLM.
+                      Can be a string or list of message dictionaries.
+                      If string, it will be converted to a single user message.
+                      If list, each dict must have 'role' and 'content' keys.
+            tools: Optional list of tool schemas for function calling.
+                  Each tool should define its name, description, and parameters.
+            callbacks: Optional list of callback functions to be executed
+                      during and after the LLM call.
+            available_functions: Optional dict mapping function names to callables
+                               that can be invoked by the LLM.
+            from_task: Optional task caller to be used for the LLM call.
+            from_agent: Optional agent caller to be used for the LLM call.
+            response_model: Optional response model to be used for the LLM call.
+
+        Returns:
+            Either a text response from the LLM (str) or
+            the result of a tool function call (Any).
+
+        Raises:
+            ValueError: If the messages format is invalid.
+            TimeoutError: If the LLM request times out.
+            RuntimeError: If the LLM request fails for other reasons.
+        "
+        '''
+        # Crews expect a "Final Answer:"
+        return "Final Answer: Placeholder: I am a placeholder for a real LLM. Please update your settings."
+
+
+    def exit(self):
+        '''
+        Optional, execute any cleanup required to shut down the LLM and clear memory.
+        This becomes important if you're frequently switching models
+        '''
+        pass
+# Add PLaceholderLLM to dictionary of availible servers
 server_dict["placeholder"] = PlaceholderLLM
 
+
+def CrewAI_LLM(model, settings):
+    '''Wrapper for CreawAI's LLM class. Adds required methods.'''
+    # debug
+    #llm = LLM('ollama/phi4-mini') # works
+    #llm = LLM(model=model) # works
+
+    # crewai must be behind the curve, max_new_tokens is the preferred flag as of 2026
+    try:
+        setting['max_tokens'] = settings['max_new_tokens']
+    except:
+        pass
+
+    # Not all of our settings are compatible with crewai's LLM class an causes issues
+    signature = inspect.signature(LLM)
+    valid_keys = signature.parameters.keys()
+    valid_settings = {key:value for (key, value) in settings.items() if key in valid_keys} 
+    llm = LLM(**valid_settings)
+    
+    def test_LLM_connection(fix, previousAttempt):
+        '''
+        Customized to each server type to test for and fix common errors.
+
+        Parameters
+        ----------
+        fix : BOOL
+            Should the function attempt to fix a broken connection?
+        previousAttempt : TYPE
+            The return of a previous _send_command.
+
+        Returns
+        -------
+        connectionStatus : BOOL
+            True if the connection has been re-established.
+        errorMsg : STR
+            Error message if connection cannot be re-established.
+
+        '''
+        connectionStatus = False
+        errorMsg = ""
+        try:
+            response = llm.call(r"hello")
+            connectionStatus = True
+        except:
+            pass # no attempt to fix the connection
+        return (connectionStatus, errorMsg)
+    
+    # Attach method to llm
+    llm.test_LLM_connection = test_LLM_connection
+
+    #debug
+    #llm.test_LLM_connection = lambda fix, previousAttempt: (True, "")
+
+    return llm # debug
+    #return LLM(model=model, **settings)
+server_dict["crewai_llm"] = CrewAI_LLM
 
 
 class OllamaBaremetalLLM(BaseLLM):
@@ -118,7 +261,7 @@ class OllamaBaremetalLLM(BaseLLM):
 
     def test_LLM_connection(self, fix, previousAttempt):
         '''
-        Should be customized to each server type to test for and fix common errors.
+        Customized to each server type to test for and fix common errors.
 
         Parameters
         ----------

@@ -1,5 +1,3 @@
-
-
 '''
 Functions and classes related to handling the chat history.
 '''
