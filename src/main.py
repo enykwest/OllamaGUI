@@ -1,5 +1,9 @@
 '''
 ToDo: make it work, make it right, make it fast
+- Fix `prev_chat_context`. The change to crewi means we're always sending the full chat history.
+- Implement the full suite of "Openai" query options (or at least setup the basics)
+  - Add `max_new_tokens` to the query
+- Remove "Settings Saved" popup and add an "OK" button for temporary changes.
 - Update Documentation to match new features
 - Now that we have a deticated module for chat history (conversation_handler.py) we should re-implement saving and loading conversations.
 - Setup Generic OpenAI-compatible Endpoint via crewai LLM class
