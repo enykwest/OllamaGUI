@@ -16,6 +16,13 @@ Also see:
 - https://docs.crewai.com/v1.15.18/en/introduction
 - 
 """
+
+# Disable crewai telemetry
+# Set environment flags BEFORE importing crewai
+import os
+os.environ["CREWAI_DISABLE_TELEMETRY"] = "true"
+os.environ["OTEL_SDK_DISABLED"] = "true"
+
 #%% Import Modules %%#
 from typing import Any, Dict, List
 from crewai import Agent, Crew, Task, BaseLLM
@@ -65,7 +72,7 @@ class MockLLM(BaseLLM):
         [{'role': 'system', 'content': 'You are <agent role>. <agent backstory>.\nYour personal goal is: <agent goal>', 'cache_breakpoint': True},
          {'role': 'user', 'content': "\nCurrent Task: " + <task description> + "\n\nThis is the expected criteria for your final answer: " + <task expected_outcome> + "\nyou MUST return the actual complete content as the final answer, not a summary.\n\nThis is the context you're working with:\n" + <task context> + "\n\nProvide your complete response:", 'cache_breakpoint': True}]
         """
-        #print(messages) # debug
+        print(messages) # debug
         if self._call_count >= len(self.responses):
             return 'Final Answer: No more mock responses configured in mock LLM.'
         
@@ -177,6 +184,7 @@ class CrewPOC:
             agents=list(self.agents.values()),
             tasks=list(self.tasks.values()),
             verbose=True,
+            share_crew=False, # prevent reporting our crew back to crewai
         )
 
     def execute(self) -> str:

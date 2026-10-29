@@ -92,6 +92,16 @@ class ChatWindow(tk.Tk):
             
         self.create_widgets()
 
+        self.configure_app() # some of these depend on the gui so this must happen after self.create_widgets
+
+
+    def configure_app(self):
+        '''
+        Configure the app based on the settings.
+        Some of these depend on the gui so this must happen after self.create_widgets().
+        '''
+        self._toggle_send_on_enter() #bugfix, checkmark would load but feature would not work
+
 
     def push_to_chat_window(self, text):
         self.chat_history_window.config(state=tk.NORMAL)
@@ -138,6 +148,7 @@ class ChatWindow(tk.Tk):
         server_types = [
             ("Transformers Pipeline", "transformers"),
             ("Ollama or Cloud Provider", "crewai_llm"),
+            #("Ollama or Cloud Provider", "crewai_agent"),
             #("Generic OpenAI-compatible Endpoint", "crewai_custom_llm"), # TBD
         ]
         server_var = tk.StringVar(value=self.settings.get("server_type", "podman"))
@@ -183,7 +194,12 @@ class ChatWindow(tk.Tk):
             # Handler for save button
             def save_sys_prompt():
                 self.settings['sys_prompt'] = sys_prompt_text.get("1.0", "end-1c")  # strip trailing newline
-                self.chat_history.add_message({'System':self.settings['sys_prompt']}) # Note that we changed the system prompt in the chat history
+                # Note that we changed the system prompt in the chat history
+                self.chat_history.add_message(
+                    {'role' : 'system',
+                     'content' : self.settings['sys_prompt'],
+                    }
+                ) 
                 sys_prompt_win.destroy()
         
             # Handler for cancel button
@@ -290,7 +306,7 @@ class ChatWindow(tk.Tk):
             right_controls,
             text="Send on Enter",
             variable=self.send_on_enter_var,
-            command=self._toggle_send_on_enter  # Implement this method!
+            command=self._toggle_send_on_enter
         )
         self.send_on_enter_checkbox.pack(side="bottom", fill="x", pady=(0, 5))
 
@@ -400,17 +416,18 @@ class ChatWindow(tk.Tk):
 
         self.chat_history.add_message(
           {'role':'user', 'content': prompt}
-          )
+        )
         model, response = self.process_prompt(prompt)
         self.chat_history.add_message(
           {'role' : 'assistant',
           'content' : response,
           'model' : model,
-          } )
+          }
+        )
 
         # Insert response into chat window
         self.chat_history_window.config(state=tk.NORMAL)
-        self.chat_history_window.insert(tk.END, model +': ' + response + '\n')
+        self.chat_history_window.insert(tk.END, f'ChadGPT ({model}): ' + response + '\n')
         self.chat_history_window.yview(tk.END)
         self.chat_history_window.config(state=tk.DISABLED)
         return 0

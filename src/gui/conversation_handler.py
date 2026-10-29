@@ -9,7 +9,7 @@ class ChatHistory:
     '''
 
     def __init__(self, history: List[Dict[str, str]] = [] ):
-        self.history = history # openai compatible, crewai compatible
+        self.history = history # openai compatible, crewai compatible, conversation consisting of a list of dictionaries that at a minimum contain a "role" and "content".
 
     
     def add_message(self, message: List[Dict[str, str]] | Dict[str, str]):
@@ -19,6 +19,16 @@ class ChatHistory:
             self.history.append(message)
         else:
             raise TypeError("Hint: The input value must be either List[Dict[str, str]] or Dict[str, str]).")
+
+
+    def get_context(self, n:int,) -> List[Dict[str, str]]:
+        '''Returns the "n" most recent messages in the chat history. If n=-1 the whole history is returned.'''
+        if (n == -1) or (n >= len(self.history)):
+            messages = self.history
+        else:
+            messages = self.history[len(self.history) - n:]
+
+        return messages
 
 
     # I ported this from the llm_backend, but in hindsight the chat history should never be deleted

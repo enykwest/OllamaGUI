@@ -2,6 +2,12 @@
 A Self contained proof-of-concept python script for running crewai
 """
 
+# Disable crewai telemetry
+# Set environment flags BEFORE importing crewai
+import os
+os.environ["CREWAI_DISABLE_TELEMETRY"] = "true"
+os.environ["OTEL_SDK_DISABLED"] = "true"
+
 from typing import Any, Dict, List
 from crewai import Agent, Crew, Task, BaseLLM
 
@@ -59,7 +65,7 @@ def test_crew_with_mock_llm():
         goal="Generate content",
         backstory="Content generator",
         llm=mock_llm,
-        verbose=False # set to True to enable reporting of this agent's activites in the terminal, redunant if crew is verbose
+        verbose=False, # set to True to enable reporting of this agent's activites in the terminal, redunant if crew is verbose
     )
 
     task = Task(
@@ -73,13 +79,14 @@ def test_crew_with_mock_llm():
         agents=[agent], 
         tasks=[task], 
         memory=False, 
-        verbose=True # set to True to enable reporting of ALL crew activites in the terminal
+        verbose=True, # set to True to enable reporting of ALL crew activites in the terminal
+        share_crew=False, # prevent reporting our crew back to crewai
     )
     
     result = crew.kickoff()
 
     assert "Crew execution succeeded." in str(result)
-    # print(result) redundant if crew is verbose
+    # print(result) #redundant if crew is verbose
 
 if __name__ == "__main__":
     test_crew_with_mock_llm()

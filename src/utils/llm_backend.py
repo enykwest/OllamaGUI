@@ -11,7 +11,7 @@ Currently we inherit from Crewai's BaseLLM, which feels correct as we can always
 #%% Import Modules %%#
 import subprocess
 from warnings import warn
-from crewai import BaseLLM, LLM
+from crewai import BaseLLM, LLM, Agent
 from typing import Any, Dict, List
 import inspect
 
@@ -36,13 +36,33 @@ def get_llm_backend(settings):
         print(r"Turn on the read permissions under repos")
         raise LLMConnectionError("OSError encountered while loading backend.")
     except Exception as e:
-        print('\n\nWTF\n\n') # debug 
+        #print('\n\nWTF\n\n') # debug 
         print(f"{e} encountered while loading backend.")
         raise LLMConnectionError(f"{e} encountered while loading backend.")
 
 # dictionary to hold all server classes
 server_dict = {}
 
+
+def instantiate_cleanly(cls, data_dict):
+    """Instantiate a class using only the dictionary keys it accepts."""
+    sig = inspect.signature(cls)
+    
+    # Check if the class accepts arbitrary **kwargs
+    has_var_kwargs = any(
+        param.kind == inspect.Parameter.VAR_KEYWORD
+        for param in sig.parameters.values()
+    )
+    
+    if has_var_kwargs:
+        # If **kwargs is accepted, pass the entire dictionary
+        return cls(**data_dict)
+    
+    # Otherwise, filter dictionary keys against the accepted parameter names
+    valid_keys = sig.parameters.keys()
+    filtered_data = {k: v for k, v in data_dict.items() if k in valid_keys}
+    
+    return cls(**filtered_data)
 
 
 #%% Server Classes %%#
@@ -135,8 +155,9 @@ class PlaceholderLLM(BaseLLM):
             RuntimeError: If the LLM request fails for other reasons.
         "
         '''
+        #print('Messages passed to LLM: ' , messages) # debug / prompt introspection
         # Crews expect a "Final Answer:"
-        return "Final Answer: Placeholder: I am a placeholder for a real LLM. Please update your settings."
+        return "Final Answer: I am a placeholder for a real LLM. Please update your settings."
 
 
     def exit(self):
@@ -151,8 +172,12 @@ server_dict["placeholder"] = PlaceholderLLM
 
 def CrewAI_LLM(model, settings):
     '''Wrapper for CreawAI's LLM class. Adds required methods.'''
-    llm = LLM(model=model) # The other keywords appear to be descriptors as opposed to actual settings. More research is needed.
-    
+    #llm = LLM(model=model) # The other keywords appear to be descriptors as opposed to actual settings. More research is needed.
+    # pytorch uses 'max_new_tokens' but openai uses 'max_completion_tokens', 'max_new_tokens' is legacy
+    settings.update({'max_tokens':settings['max_new_tokens'], 'max_completion_tokens':settings['max_new_tokens'], })
+    llm = instantiate_cleanly(LLM, settings)# testing
+    #llm = LLM(model=model, max_tokens=10)
+
     def test_LLM_connection(fix, previousAttempt):
         '''
         Customized to each server type to test for and fix common errors.
@@ -196,6 +221,11 @@ try:
         # Note that the default location for the model cache is: C:\Users\<USER>\.cache\huggingface\hub\<model--name>\snapshots
         def __init__(self, model="microsoft/DialoGPT-small", settings={}):
             
+            # Crewai requirements
+            data = {'model' : 'custom-llm'}
+            super().__init__(**data)
+            
+            # Our Stuff
             self.model = model
             try: # init pipeline
                 # Using `low_cpu_mem_usage=True` or a `device_map` requires Accelerate: `pip install accelerate`
@@ -296,6 +326,7 @@ try:
 
         # Inheriting from crewai's BaseLLM and adding a call command is the simplest way to make custom crewai compatible backends
         def call(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
+            #print(messages) # debug / prompt introspection
             response = self.pipe(messages, # send whole chat history, not just most recent message
                                  max_new_tokens=self.settings['max_new_tokens'],
                                  )
