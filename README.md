@@ -3,10 +3,10 @@ A TkInter based GUI for interacting with locally hosted LLMs.
 
 ## Development Status
 Currently, we are in the process of integrating the `crewai` python module in order to implement advanced features such as "crews" and tool usage. As of right now there are four ways to connect to an LLM:
-1. Automatically download and run a model directly from HuggingFace.co using the **Transformers Pipeline** backend. by specifying the "<channel>/<model-name>".
-2. Automatically download and run a model via Ollama (installed separately) by using the **Ollama or Cloud Provider* backend. "ollama/<model-name>".
-3. Connect to a cloud provider via the **Ollama or Cloud Provider* backend (untested, plus you must export the API key as an evironmental variable).
-4. Manually download a model from HuggingFace.co and run it using the **Transformers Pipeline** backend by specifing the path. (good for offline computers)
+1. Automatically download and run a model directly from HuggingFace.co using the **Transformers Pipeline** backend. by specifying the "\<channel>/\<model-name>" when specifying the model.
+2. Automatically download and run a model via Ollama (installed separately) by using the **Ollama or Cloud Provider** backend. "ollama/\<model-name>" when specifying the model.
+3. Connect to a cloud provider via the **Ollama or Cloud Provider** backend (untested, plus you must export the API key as an environmental variable).
+4. Manually download a model from HuggingFace.co and run it using the **Transformers Pipeline** backend by specifying the path. (good for offline computers)
 
 The preliminary development that has been done to use Ollama hosted in Podman or docker will be abandoned in favor of supporting Generic OpenAI-compatible Endpoints by specifying the base_url.
 
